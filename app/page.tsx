@@ -15,7 +15,35 @@ import { HeroHighlight,Highlight } from "@/components/ui/hero-highlight";
 import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import FooterGlow from "@/components/layout/Footer/Footer";
+import { Carousel_001 } from "@/components/ui/skiper-ui/skiper47";
 
+
+const images = [
+  {
+    src: "/images/x.com/11.jpeg",
+    alt: "Illustrations by my fav AarzooAly",
+  },
+  {
+    src: "/images/x.com/13.jpeg",
+    alt: "Illustrations by my fav AarzooAly",
+  },
+  {
+    src: "/images/x.com/32.jpeg",
+    alt: "Illustrations by my fav AarzooAly",
+  },
+  {
+    src: "/images/x.com/20.jpeg",
+    alt: "Illustrations by my fav AarzooAly",
+  },
+  {
+    src: "/images/x.com/21.jpeg",
+    alt: "Illustrations by my fav AarzooAly",
+  },
+  {
+    src: "/images/x.com/19.jpeg",
+    alt: "Illustrations by my fav AarzooAly",
+  },
+];
 
 const testimonials = [
   {
@@ -250,11 +278,9 @@ export default function HeroSectionOne() {
             <TrustSection/>
           </div>
 
-          <div>
-
-          <ImageCarousel slides={slides} />
-            
-          </div>
+          <div className="flex h-full w-full items-center justify-center overflow-hidden bg-[#f5f4f3]">
+      <Carousel_001 className="" images={images} showPagination loop />
+    </div>
 
           <div className="mt-20 pt-10">
           <h1 className="relative z-10 mx-auto max-w-4xl text-center text-2xl font-bold leading-tight text-slate-700 sm:text-3xl md:text-4xl lg:text-5xl dark:text-slate-300">
