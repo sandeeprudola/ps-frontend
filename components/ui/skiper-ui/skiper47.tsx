@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 const Skiper47 = () => {
   const images = [
     {
-      src: "/images/x.com/11.jpeg",
+      src: "/widex1.svg",
       alt: "Illustrations by my fav AarzooAly",
     },
     {
@@ -47,7 +47,7 @@ const Skiper47 = () => {
   ];
 
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-[#f5f4f3]">
+    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-white">
       <Carousel_001 className="" images={images} showPagination loop />
     </div>
   );
@@ -130,7 +130,7 @@ const Carousel_001 = ({
         modules={[EffectCoverflow, Autoplay, Pagination, Navigation]}
       >
         {images.map((image, index) => (
-          <SwiperSlide key={index} className="!h-[320px] w-full border">
+          <SwiperSlide key={index} className="!h-[320px] w-full rounded-3xl overflow-hidden shadow-lg">
             <img
               className="h-full w-full object-cover"
               src={image.src}
@@ -154,20 +154,3 @@ const Carousel_001 = ({
 };
 
 export { Carousel_001 };
-
-/**
- * Skiper 47 Carousel_001 — React + Swiper
- * Built with Swiper.js - Read docs to learn more https://swiperjs.com/
- * Illustrations by AarzooAly - https://x.com/AarzooAly
- *
- * License & Usage:
- * - Free to use and modify in both personal and commercial projects.
- * - Attribution to Skiper UI is required when using the free version.
- * - No attribution required with Skiper UI Pro.
- *
- * Feedback and contributions are welcome.
- *
- * Author: @gurvinder-singh02
- * Website: https://gxuri.in
- * Twitter: https://x.com/Gur__vi
- */

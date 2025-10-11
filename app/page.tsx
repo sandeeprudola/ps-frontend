@@ -9,25 +9,25 @@ import { NavbarDemo } from "@/components/layout/Navbar/NavbarDemo";
 import TrustSection from "@/components/layout/TrustSection/TrustSection";
 import FeaturesSectionDemo from "@/components/features-section-demo-2";
 import { WobbleCard } from "@/components/ui/wobble-card";
-import { HeroHighlight,Highlight } from "@/components/ui/hero-highlight";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import FooterGlow from "@/components/layout/Footer/Footer";
 import { Carousel_001 } from "@/components/ui/skiper-ui/skiper47";
 import { LayoutTextFlip } from "@/components/ui/layout-text-flip";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import Countup from "@/components/ui/Countup";
+import { FlipWords } from "@/components/ui/flip-words";
 
 
 
-
+const words = ["Speech", "Hearing", "Confidence"];
 
 const images = [
   {
-    src: "/images/x.com/11.jpeg",
+    src: "/widex1.svg",
     alt: "Illustrations by my fav AarzooAly",
   },
   {
-    src: "/images/x.com/13.jpeg",
+    src: "/widex2.svg",
     alt: "Illustrations by my fav AarzooAly",
   },
   {
@@ -80,39 +80,7 @@ const testimonials = [
   },
 ];
 
-export const clinicServices = [
-  {
-    src: "/images/speech-therapy.jpg",
-    title: "Advanced Speech Therapy",
-    category: "Speech & Language",
-    content: (
-      <div>
-        <p>Our certified therapists provide personalized plans for children and adults to improve articulation, fluency, and language skills. We use modern techniques to ensure effective and engaging sessions.</p>
-      </div>
-    ),
-  },
-  {
-    src: "/images/hearing-aid.jpg",
-    title: "Modern Hearing Aids",
-    category: "Audiology Services",
-    content: (
-      <div>
-        <p>Discover a new world of sound with our state-of-the-art digital hearing aids. We offer professional fitting, programming, and follow-up care to ensure optimal performance and comfort.</p>
-      </div>
-    ),
-  },
-  {
-    src: "/images/occupational-therapy.jpg",
-    title: "Occupational Therapy",
-    category: "Pediatric Care",
-    content: (
-      <div>
-        <p>Our occupational therapy programs help children develop the skills needed for daily living, improving fine motor skills, sensory processing, and overall independence.</p>
-      </div>
-    ),
-  },
-  // ... Add as many other cards as you need
-];
+
 
 
 const slides = [
@@ -229,11 +197,22 @@ export default function HeroSectionOne() {
           }}
           className=""
         >
+          
           <div className="relative z-10 mt-10 mx-auto max-w-xl py-4 text-center text-lg font-normal text-neutral-600 dark:text-neutral-400">
             <TrustSection/>
           </div>
 
-          <div className="flex h-full w-full items-center justify-center overflow-hidden bg-[#f5f4f3]">
+          <div className="h-35 flex justify-center items-center p-30">
+      <div className="text-5xl mx-auto font-semibold text-black">
+       <h2>
+       Empowering
+       <FlipWords words={words} /> 
+        </h2> 
+        
+      </div>
+    </div>
+
+          <div className="flex h-full w-full items-center justify-center overflow-hidden bg-[#ffff]">
       <Carousel_001 className="" images={images} showPagination loop />
           </div>
       <div className="mt-20 pt-10 px-4">
@@ -270,7 +249,7 @@ export default function HeroSectionOne() {
 </div>
 
 
-     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full">
+     <div className="pt-20 grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full">
               <WobbleCard containerClassName="col-span-1 lg:col-span-2 h-full bg-pink-800 min-h-[500px] lg:min-h-[300px]" className="text-white">
               <h2 className="text-2xl font-bold mb-2">Card One</h2>
               <p className="text-sm opacity-80">
