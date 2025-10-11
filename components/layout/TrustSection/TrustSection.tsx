@@ -1,15 +1,12 @@
-
 // components/TrustSection.tsx
-import Image from 'next/image';
+import Image from "next/image";
 
 const logos = [
-  { name: 'Google', path: '/logos/google.svg', width: 120, height: 40 },
-  { name: 'Microsoft', path: '/logos/microsoft.svg', width: 120, height: 26 },
-  { name: 'Cisco', path: '/logos/cisco.svg', width: 80, height: 42 },
-  { name: 'Zomato', path: '/logos/zomato.svg', width: 110, height: 28 },
+  { name: "Widex", path: "/idDek6O_wm_1760187229708.png", width: 120, height: 40 },
+  { name: "Signia", path: "/idavFTmm1v_1760187674551.png", width: 120, height: 15 },
+  { name: "Phonak", path: "/Phonak_idzGop50O3_1.svg", width: 80, height: 42 },
+  { name: "ReSound", path: "/ReSound NA_idna1tHzXI_0.png", width: 110, height: 28 },
   // Add more logos here to make the scroll effect more apparent
-  { name: 'Strapi', path: '/logos/strapi.svg', width: 100, height: 30 },
-  { name: 'Neon', path: '/logos/neon.svg', width: 90, height: 30 },
 ];
 
 const TrustSection = () => {
@@ -20,13 +17,14 @@ const TrustSection = () => {
           Used by companies and people working at
         </p>
 
-        {/* --- Marquee Container --- */}
+        {/* --- Marquee Container with Fade Edges --- */}
         <div
-          className="relative flex gap-10 overflow-hidden"
+          className="relative flex gap-10 overflow-hidden 
+          [mask-image:linear-gradient(to_right,transparent,white_15%,white_55%,transparent)]
+          dark:[mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]"
         >
           {/* --- The scrolling element --- */}
           <div className="flex min-w-full shrink-0 items-center gap-10 animate-[scroll_40s_linear_infinite]">
-            {/* Render logos for the first time */}
             {logos.map((logo, index) => (
               <Image
                 key={index}
@@ -34,14 +32,13 @@ const TrustSection = () => {
                 alt={`${logo.name} logo`}
                 width={logo.width}
                 height={logo.height}
-                className="filter grayscale transition hover:grayscale-0"
+                className="filter grayscale transition hover:grayscale-100"
               />
             ))}
           </div>
 
           {/* --- The second set of logos for a seamless loop --- */}
           <div className="flex min-w-full shrink-0 items-center gap-10 animate-[scroll_40s_linear_infinite]">
-            {/* Render logos for the second time */}
             {logos.map((logo, index) => (
               <Image
                 key={index + logos.length}

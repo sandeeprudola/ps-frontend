@@ -5,17 +5,20 @@ import Image from "next/image";
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { cn } from "@/lib/utils";
 import { NavbarDemo } from "@/components/layout/Navbar/NavbarDemo";
-import ImageCarousel from "@/components/ui/Carousel";
 import TrustSection from "@/components/layout/TrustSection/TrustSection";
 import FeaturesSectionDemo from "@/components/features-section-demo-2";
 import { WobbleCard } from "@/components/ui/wobble-card";
 import { HeroHighlight,Highlight } from "@/components/ui/hero-highlight";
-import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import FooterGlow from "@/components/layout/Footer/Footer";
 import { Carousel_001 } from "@/components/ui/skiper-ui/skiper47";
+import { LayoutTextFlip } from "@/components/ui/layout-text-flip";
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
+import Countup from "@/components/ui/Countup";
+
+
+
 
 
 const images = [
@@ -130,65 +133,13 @@ const slides = [
   },
 ];
 
-export const LayoutTextFlip = ({
-  text = "Build Amazing",
-  words = ["Landing Pages", "Component Blocks", "Page Sections", "3D Shaders"],
-  duration = 3000,
-}: {
-  text: string;
-  words: string[];
-  duration?: number;
-}) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % words.length);
-    }, duration);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <>
-      <motion.span
-        layoutId="subtext"
-        className="text-4xl font-bold tracking-tight md:text-4xl"
-      >
-        {text}
-      </motion.span>
-
-      <motion.span
-        layout
-        className="relative w-fit overflow-hidden bg-transparent px-4 py-2 font-sans text-2xl font-bold tracking-tight text-black shadow-none ring-0 drop-shadow-none md:text-4xl lg:text-6xl dark:bg-transparent dark:text-white"
-      >
-        <AnimatePresence mode="popLayout">
-          <motion.span
-            key={currentIndex}
-            initial={{ y: -40, filter: "blur(10px)" }}
-            animate={{
-              y: 0,
-              filter: "blur(0px)",
-            }}
-            exit={{ y: 50, filter: "blur(10px)", opacity: 0 }}
-            transition={{
-              duration: 0.5,
-            }}
-            className={cn("inline-block whitespace-nowrap")}
-          >
-            {words[currentIndex]}
-          </motion.span>
-        </AnimatePresence>
-      </motion.span>
-    </>
-  );
-};
 
 
 
 export default function HeroSectionOne() {
   return (
     <div className="relative mx-auto my-10 flex max-w-7xl flex-col items-center justify-center">
+      
       <NavbarDemo/>
       <div className="absolute inset-y-0 left-0 h-full w-px bg-neutral-200/80 dark:bg-neutral-800/80">
         <div className="absolute top-0 h-40 w-px bg-gradient-to-b from-transparent via-blue-500 to-transparent" />
@@ -199,31 +150,35 @@ export default function HeroSectionOne() {
       <div className="absolute inset-x-0 bottom-0 h-px w-full bg-neutral-200/80 dark:bg-neutral-800/80">
         <div className="absolute mx-auto h-px w-40 bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
       </div>
-      <div className="px-4 py-10 md:py-20">
-        <h1 className="relative z-10 mx-auto max-w-4xl text-center text-2xl font-bold text-slate-700 md:text-4xl lg:text-6xl dark:text-slate-300">
-          {"Expert Speech & Hearing Services In"
-            .split(" ")
-            .map((word, index) => (
-              <motion.span
-                key={index}
-                initial={{ opacity: 0, filter: "blur(4px)", y: 10 }}
-                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                transition={{
-                  duration: 0.3,
-                  delay: index * 0.1,
-                  ease: "easeInOut",
-                }}
-                className="mr-2 inline-block"
-              >
-                {word}
-              </motion.span>
-            ))}
-            <LayoutTextFlip text=""
-              words={["Dehradun","Vikasnagar","Rishikesh","Kotdwara","Haridwar"]}
-              duration={3000}
-              />
-        </h1>
-        
+     
+    <div className="px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 md:pt-20 pb-10 sm:pb-16 md:pb-20">
+
+      <h1 className="relative z-10 mx-auto max-w-4xl text-center text-xl sm:text-2xl md:text-4xl lg:text-6xl font-bold text-slate-700 dark:text-slate-300 leading-tight px-2">
+        {"Expert Speech & Hearing Services In"
+          .split(" ")
+          .map((word, index) => (
+            <motion.span
+              key={index}
+              initial={{ opacity: 0, filter: "blur(4px)", y: 10 }}
+              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+              transition={{
+                duration: 0.3,
+                delay: index * 0.1,
+                ease: "easeInOut",
+              }}
+              className="mr-2 inline-block"
+            >
+              {word}
+            </motion.span>
+          ))}
+        <br className="block sm:hidden" /> {/* force line break on mobile */}
+        <LayoutTextFlip
+          text=""
+          words={["Dehradun", "Vikasnagar", "Rishikesh", "Kotdwara", "Haridwar"]}
+          duration={3000}
+        />
+      </h1>
+
         <motion.p
           initial={{
             opacity: 0,
@@ -235,7 +190,7 @@ export default function HeroSectionOne() {
             duration: 0.3,
             delay: 0.8,
           }}
-          className="relative z-10 mx-auto max-w-xl py-4 text-center text-lg font-normal text-neutral-600 dark:text-neutral-400"
+          className="relative z-10 mx-auto max-w-md sm:max-w-xl px-4 py-4 text-center text-[clamp(0.95rem,2.5vw,1.2rem)] md:text-[clamp(1rem,1.5vw,1.5rem)] font-normal text-neutral-600 dark:text-neutral-400 leading-relaxed break-words"
         >
           Expert audiology and compassionate speech therapy for every stage of life.
         </motion.p>
@@ -250,7 +205,7 @@ export default function HeroSectionOne() {
             duration: 0.3,
             delay: 1,
           }}
-          className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-4"
+          className="relative z-10 mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4"
         >
           <button className="w-60 transform rounded-lg bg-black px-6 py-2 font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200">
             Signin
@@ -280,31 +235,42 @@ export default function HeroSectionOne() {
 
           <div className="flex h-full w-full items-center justify-center overflow-hidden bg-[#f5f4f3]">
       <Carousel_001 className="" images={images} showPagination loop />
-    </div>
-
-          <div className="mt-20 pt-10">
-          <h1 className="relative z-10 mx-auto max-w-4xl text-center text-2xl font-bold leading-tight text-slate-700 sm:text-3xl md:text-4xl lg:text-5xl dark:text-slate-300">
-                {"Expert Speech Therapy with a Personal Touch"
-                  .split(" ")
-                  .map((word, index) => (
-                    <motion.span
-                key={index}
-                initial={{ opacity: 0, filter: "blur(4px)", y: 10 }}
-                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                transition={{
-                  duration: 0.3,
-                  delay: index * 0.1,
-                  ease: "easeInOut",
-                }}
-                className="mr-2 inline-block"
-              >
-                {word}
-              </motion.span>
-            ))}
-          </h1>
-            <FeaturesSectionDemo/>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full">
+      <div className="mt-20 pt-10 px-4">
+        <h1
+        className="relative z-10 mx-auto max-w-[90vw] sm:max-w-3xl text-center 
+                  text-[clamp(1.125rem,5vw,1.75rem)] md:text-[clamp(1.5rem,3vw,2.25rem)] 
+                  font-bold leading-snug text-slate-700 dark:text-slate-300 
+                  whitespace-normal break-words"
+      >
+        {"Your Voice, Our Expertise"
+          .split(" ")
+          .map((word, index) => (
+            <motion.span
+              key={index}
+              initial={{ opacity: 0, filter: "blur(4px)", y: 10 }}
+              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+              transition={{
+                duration: 0.3,
+                delay: index * 0.06,
+                ease: "easeInOut",
+              }}
+              // important: make sure the word is inline so it can wrap naturally
+              className="mr-1 inline"
+              style={{ display: "inline" }}
+            >
+          {word}
+        </motion.span>
+      ))}
+  </h1>
+<div className="bg-white dark:bg-neutral-900">
+<FeaturesSectionDemo />
+</div>
+  
+</div>
+
+
+     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full">
               <WobbleCard containerClassName="col-span-1 lg:col-span-2 h-full bg-pink-800 min-h-[500px] lg:min-h-[300px]" className="text-white">
               <h2 className="text-2xl font-bold mb-2">Card One</h2>
               <p className="text-sm opacity-80">
@@ -341,15 +307,56 @@ export default function HeroSectionOne() {
 
           </div>
 
-          <div>
-            <HeroHighlight containerClassName="h-[40rem]">
-              <h1 className="text-4xl sm:text-6xl font-bold text-center text-gray-900 dark:text-white leading-snug"> Why are we Best in {" "}
-              <Highlight>Dehradun</Highlight>
-              </h1>
-            </HeroHighlight>
+          <div className=" p-30 min-h-70 flex flex-col justify-center items-center bg-white dark:bg-black px-4">
+          <TextGenerateEffect
+              words="Results that speak for themselves — read why people trust us."
+              className="text-center text-4xl md:text-6xl lg:text-4xl font-semibold"
+              filter={true}
+              duration={0.6}
+      />
+<div className="mx-auto max-w-6xl px-4 py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 text-center">
+  {/* Stat 1 */}
+  <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white dark:bg-neutral-900 dark:border-neutral-800 shadow-sm p-8">
+    <h3 className="text-5xl font-bold text-blue-600 dark:text-blue-400">
+    <Countup
+              from={0}
+              to={7000}
+              separator=","
+              direction="up"
+              duration={1.2}
+              className="count-up-text"
+            />
+      <span>+</span>
+    </h3>
+    <p className="mt-2 text-gray-700 dark:text-gray-300 text-lg font-medium">
+      Happy Clients
+    </p>
+  </div>
+
+  {/* Stat 2 */}
+  <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white dark:bg-neutral-900 dark:border-neutral-800 shadow-sm p-8">
+    <h3 className="text-5xl font-bold text-blue-600 dark:text-blue-400">
+      <span>15+</span>
+    </h3>
+    <p className="mt-2 text-gray-700 dark:text-gray-300 text-lg font-medium">
+      Certified Therapists
+    </p>
+  </div>
+
+  {/* Stat 3 */}
+  <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white dark:bg-neutral-900 dark:border-neutral-800 shadow-sm p-8">
+    <h3 className="text-5xl font-bold text-blue-600 dark:text-blue-400">
+      <span>10+</span>
+    </h3>
+    <p className="mt-2 text-gray-700 dark:text-gray-300 text-lg font-medium">
+      Years of Experience
+    </p>
+  </div>
+</div>
+            
           </div>
 
-          <div className="h-[40rem] rounded-md flex flex-col antialiased bg-white dark:bg-black dark:bg-grid-white/[0.05] items-center justify-center relative overflow-hidden">
+          <div className=" rounded-md flex flex-col antialiased bg-white dark:bg-black dark:bg-grid-white/[0.05] items-center justify-center relative overflow-hidden">
       <InfiniteMovingCards
         items={testimonials}
         direction="right"
@@ -362,7 +369,7 @@ export default function HeroSectionOne() {
             </div>
 
         </motion.div>
-      </div>
+    </div>
     </div>
   );
 }
