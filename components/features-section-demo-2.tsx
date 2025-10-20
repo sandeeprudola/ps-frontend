@@ -13,48 +13,48 @@ import {
 export default function FeaturesSectionDemo() {
   const features = [
     {
-      title: "Built for developers",
+      title: "Advanced Hearing Care",
       description:
-        "Built for engineers, developers, dreamers, thinkers and doers.",
+        "From comprehensive hearing evaluations to fitting state-of-the-art digital hearing aids, we help you reconnect with the world of sound.",
       icon: <IconTerminal2 />,
     },
     {
-      title: "Ease of use",
+      title: "Speech-Language Therapy",
       description:
-        "It's as easy as using an Apple, and as expensive as buying one.",
+        "Our certified therapists work with children and adults to improve speech clarity, language skills, and overall communication confidence.",
       icon: <IconEaseInOut />,
     },
     {
-      title: "Pricing like no other",
+      title: "Occupational Therapy",
       description:
-        "Our prices are best in the market. No cap, no lock, no credit card required.",
+        "We help individuals develop the skills needed for daily living, focusing on fine motor, sensory integration, and cognitive abilities to foster independence.",
       icon: <IconCurrencyDollar />,
     },
     {
-      title: "100% Uptime guarantee",
-      description: "We just cannot be taken down by anyone.",
+      title: "Autism Communication Support",
+      description: "Specialized programs designed to enhance social communication, interaction, and functional language skills for individuals on the autism spectrum.",
       icon: <IconCloud />,
     },
     {
-      title: "Multi-tenant Architecture",
-      description: "You can simply share passwords instead of buying new seats",
+      title: "Speech Sound Disorders",
+      description: "Targeted therapy for articulation and phonological challenges, helping individuals of all ages pronounce sounds and words correctly.",
       icon: <IconRouteAltLeft />,
     },
     {
-      title: "24/7 Customer Support",
+      title: "Pediatric Early Intervention",
       description:
-        "We are available a 100% of the time. Atleast our AI Agents are.",
+        "We believe in a nurturing start. Our early intervention programs identify and address developmental delays in speech, language, and hearing.",
       icon: <IconHelp />,
     },
     {
-      title: "Money back guarantee",
+      title: "Personalized Therapy Plans",
       description:
-        "If you donot like EveryAI, we will convince you to like us.",
+        "Every journey is unique. We create a customized, evidence-based therapy plan that is tailored to your specific goals and needs.",
       icon: <IconAdjustmentsBolt />,
     },
     {
-      title: "And everything else",
-      description: "I just ran out of copy ideas. Accept my sincere apologies",
+      title: "Certified & Caring Experts",
+      description: "Our team consists of highly qualified and compassionate professionals dedicated to providing the highest standard of care in a supportive environment.",
       icon: <IconHeart />,
     },
   ];

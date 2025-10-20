@@ -16,36 +16,91 @@ import { LayoutTextFlip } from "@/components/ui/layout-text-flip";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import Countup from "@/components/ui/Countup";
 import { FlipWords } from "@/components/ui/flip-words";
+import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
+import Link from "next/link";
+import {
+  IconArrowWaveRightUp,
+  IconBoxAlignRightFilled,
+  IconBoxAlignTopLeft,
+  IconClipboardCopy,
+  IconFileBroken,
+  IconSignature,
+  IconTableColumn,
+} from "@tabler/icons-react";
 
 
 
 const words = ["Speech", "Hearing", "Confidence"];
+const Skeleton = () => (
+  <div className="flex flex-1 w-full h-full min-h-[6rem] rounded-xl bg-gradient-to-br from-neutral-200 dark:from-neutral-900 dark:to-neutral-800 to-neutral-100"></div>
+);
+
+
+const words1 = ["Sound","Conversation","Clarity","Connection"];
+
+const items = [
+  {
+    title: "Advanced Hearing Care",
+    description: "From comprehensive hearing evaluations to fitting state-of-the-art digital hearing aids, we help you reconnect with the world of sound.",
+    header: <Skeleton />,
+    icon: <IconClipboardCopy className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "Speech-Language Therapy",
+    description: "Our certified therapists work with children and adults to improve speech clarity, language skills, and overall communication confidence.",
+    header: <Skeleton />,
+    icon: <IconFileBroken className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "Comprehensive Hearing Evaluations",
+    description: "Utilizing advanced diagnostic tools to provide an accurate and detailed understanding of your unique hearing profile.",
+    header: <Skeleton />,
+    icon: <IconSignature className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "A Nurturing Start for Little Ones",
+    description:
+      "Specialized pediatric care to support children in developing crucial speech, language, and hearing skills from an early age.",
+    header: <Skeleton />,
+    icon: <IconTableColumn className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "Fluency & Stuttering Therapy",
+    description: "We offer evidence-based strategies and a supportive environment to help you or your loved ones speak smoothly and freely.",
+    header: <Skeleton />,
+    icon: <IconArrowWaveRightUp className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "Professional Voice Care",
+    description: "Tailored therapy for singers, teachers, and professionals to maintain vocal health and overcome voice disorders.",
+    header: <Skeleton />,
+    icon: <IconBoxAlignTopLeft className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "The Spirit of Adventure",
+    description: "Embark on exciting journeys and thrilling discoveries.",
+    header: <Skeleton />,
+    icon: <IconBoxAlignRightFilled className="h-4 w-4 text-neutral-500" />,
+  },
+];
 
 const images = [
   {
-    src: "/widex1.svg",
+    src: "/1.svg",
     alt: "Illustrations by my fav AarzooAly",
   },
   {
-    src: "/widex2.svg",
+    src: "/2.svg",
     alt: "Illustrations by my fav AarzooAly",
   },
   {
-    src: "/images/x.com/32.jpeg",
+    src: "/3.svg",
     alt: "Illustrations by my fav AarzooAly",
   },
   {
-    src: "/images/x.com/20.jpeg",
+    src: "/4.svg",
     alt: "Illustrations by my fav AarzooAly",
-  },
-  {
-    src: "/images/x.com/21.jpeg",
-    alt: "Illustrations by my fav AarzooAly",
-  },
-  {
-    src: "/images/x.com/19.jpeg",
-    alt: "Illustrations by my fav AarzooAly",
-  },
+  }
 ];
 
 const testimonials = [
@@ -175,12 +230,22 @@ export default function HeroSectionOne() {
           }}
           className="relative z-10 mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4"
         >
-          <button className="w-60 transform rounded-lg bg-black px-6 py-2 font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200">
-            Signin
-          </button>
-          <button className="w-60 transform rounded-lg border border-gray-300 bg-white px-6 py-2 font-medium text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-700 dark:bg-black dark:text-white dark:hover:bg-gray-900">
-            Login
-          </button>
+          <Link
+              href="/Signin"
+              className="inline-block w-60 text-center transform rounded-lg bg-black px-6 py-2 
+                        font-medium text-white transition-all duration-300 hover:-translate-y-0.5 
+                        hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+            >
+              Signin
+          </Link>
+          <Link
+              href="/Signin"
+              className="inline-block w-60 text-center transform rounded-lg bg-black px-6 py-2 
+                        font-medium text-white transition-all duration-300 hover:-translate-y-0.5 
+                        hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+            >
+              Signin
+          </Link>
         </motion.div>
         <motion.div
           initial={{
@@ -249,42 +314,24 @@ export default function HeroSectionOne() {
 </div>
 
 
-     <div className="pt-20 grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full">
-              <WobbleCard containerClassName="col-span-1 lg:col-span-2 h-full bg-pink-800 min-h-[500px] lg:min-h-[300px]" className="text-white">
-              <h2 className="text-2xl font-bold mb-2">Card One</h2>
-              <p className="text-sm opacity-80">
-                This is a wobble card with a cool 3D hover effect.
-              </p>
-            </WobbleCard>
-            <WobbleCard containerClassName="col-span-1 min-h-[300px]">
-        <h2 className="max-w-80  text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-white">
-          No shirt, no shoes, no weapons.
-        </h2>
-        <p className="mt-4 max-w-[26rem] text-left  text-base/6 text-neutral-200">
-          If someone yells “stop!”, goes limp, or taps out, the fight is over.
-        </p>
-        </WobbleCard>
-        <WobbleCard containerClassName="col-span-1 lg:col-span-3 bg-blue-900 min-h-[500px] lg:min-h-[600px] xl:min-h-[300px]">
-        <div className="max-w-sm">
-          <h2 className="max-w-sm md:max-w-lg  text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-white">
-            Signup for blazing-fast cutting-edge state of the art Gippity AI
-            wrapper today!
-          </h2>
-          <p className="mt-4 max-w-[26rem] text-left  text-base/6 text-neutral-200">
-            With over 100,000 mothly active bot users, Gippity AI is the most
-            popular AI platform for developers.
-          </p>
-        </div>
-        <img
-          src="/linear.webp"
-          width={500}
-          height={500}
-          alt="linear demo image"
-          className="absolute -right-10 md:-right-[40%] lg:-right-[20%] -bottom-10 object-contain rounded-2xl"
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16 bg-white dark:bg-neutral-950"> 
+     <div className="p-20 text-4xl mx-auto font-normal text-neutral-600 dark:text-neutral-400">
+     Rediscover the Joy of
+        <FlipWords words={words1} /> <br />
+      </div>
+     <BentoGrid className="max-w-4xl mx-auto">
+      {items.map((item, i) => (
+        <BentoGridItem
+          key={i}
+          title={item.title}
+          description={item.description}
+          header={item.header}
+          icon={item.icon}
+          className={i === 3 || i === 6 ? "md:col-span-2" : ""}
         />
-        </WobbleCard>
-
-          </div>
+      ))}
+    </BentoGrid>
+     </div>
 
           <div className=" p-30 min-h-70 flex flex-col justify-center items-center bg-white dark:bg-black px-4">
           <TextGenerateEffect
