@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -8,11 +8,38 @@ import {
   IconBrandGoogle,
   IconBrandOnlyfans,
 } from "@tabler/icons-react";
+import axios from "axios";
 
 export default function  SignupFormDemo() {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+
+  const [formData, setFormData] = useState({
+    username:"",
+    email: "",
+    password: "",
+    firstname: "",
+    lastname: "",
+    role:""
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value,
+    });
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Form submitted");
+
+    try {
+      const response = await axios.post("http://localhost:5000/api/signup", formData);
+      console.log("Signup success:", response.data);
+      alert("Signup successful!");
+    } catch (error: any) {
+      console.error("Signup failed:", error.response?.data || error.message);
+      alert("Signup failed. Please try again.");
+    }
   };
   return (
     <div className="shadow-input mx-auto w-full max-w-md rounded-none bg-white p-4 md:rounded-2xl md:p-8 dark:bg-black">
@@ -27,11 +54,11 @@ export default function  SignupFormDemo() {
       <form className="my-8" onSubmit={handleSubmit}>
         <div className="mb-4 flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2">
           <LabelInputContainer>
-            <Label htmlFor="firstname">First name</Label>
+            <Label htmlFor="firstName">firstName</Label>
             <Input id="firstname" placeholder="Tyler" type="text" />
           </LabelInputContainer>
           <LabelInputContainer>
-            <Label htmlFor="lastname">Last name</Label>
+            <Label htmlFor="lastName">lastName</Label>
             <Input id="lastname" placeholder="Durden" type="text" />
           </LabelInputContainer>
         </div>
@@ -43,14 +70,20 @@ export default function  SignupFormDemo() {
           <Label htmlFor="password">Password</Label>
           <Input id="password" placeholder="••••••••" type="password" />
         </LabelInputContainer>
-        <LabelInputContainer className="mb-8">
-          <Label htmlFor="twitterpassword">Your twitter password</Label>
-          <Input
-            id="twitterpassword"
-            placeholder="••••••••"
-            type="twitterpassword"
-          />
-        </LabelInputContainer>
+
+        <LabelInputContainer className="mb-4">
+  <Label htmlFor="serviceType">Service Type</Label>
+  <select
+    id="serviceType"
+    className="border border-gray-300 rounded-md p-2"
+    defaultValue=""
+  >
+    <option value="" disabled>Select Service</option>
+    <option value="hearing">Hearing</option>
+    <option value="speech">Speech</option>
+    <option value="both">Both</option>
+  </select>
+</LabelInputContainer>
 
         <button
           className="group/btn relative block h-10 w-full rounded-md bg-gradient-to-br from-black to-neutral-600 font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset]"
