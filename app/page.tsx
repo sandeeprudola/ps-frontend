@@ -239,7 +239,7 @@ export default function HeroSectionOne() {
               Signin
           </Link>
           <Link
-              href="/Signin"
+              href="/Login"
               className="inline-block w-60 text-center transform rounded-lg bg-black px-6 py-2 
                         font-medium text-white transition-all duration-300 hover:-translate-y-0.5 
                         hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
@@ -278,7 +278,7 @@ export default function HeroSectionOne() {
     </div>
 
     <div className="flex w-full items-center justify-center overflow-hidden bg-white py-10">
-
+   
       <Carousel_001 className="" images={images} showPagination loop />
           </div>
       <div className="mt-20 pt-10 px-4">

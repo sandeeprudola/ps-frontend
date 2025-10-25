@@ -5,17 +5,14 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 
-export default function SignupForm() {
+export default function LoginForm() {
   const [formData, setFormData] = useState({
     username: "",
-    firstName: "",
-    lastName: "",
     email: "",
     password: "",
-    role: "",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.id]: e.target.value,
@@ -25,20 +22,22 @@ export default function SignupForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:3000/api/v1/user/signup", formData);
-      console.log("Signup success:", response.data);
-      alert("Signup successful!");
+      const response = await axios.post("http://localhost:3000/api/v1/user/signin", formData);
+      console.log("Signin success:", response.data);
+      alert(`Signin success! Role: ${response.data.role}`);
+      // You can save token to localStorage/sessionStorage if needed
+      localStorage.setItem("token", response.data.token);
     } catch (error: any) {
-      console.error("Signup failed:", error.response?.data || error.message);
-      alert("Signup failed. Please check your input or try again.");
+      console.error("Signin failed:", error.response?.data || error.message);
+      alert(error.response?.data?.msg || "Signin failed. Check your credentials.");
     }
   };
 
   return (
     <div className="mx-auto w-full max-w-md bg-white p-6 md:p-8 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-2 text-gray-800">Sign Up</h2>
+      <h2 className="text-xl font-bold mb-2 text-gray-800">Login</h2>
       <p className="text-sm text-gray-600 mb-6">
-        Create your account at PS Speech & Hearing
+        Enter your credentials to login
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -53,30 +52,6 @@ export default function SignupForm() {
             onChange={handleChange}
           />
         </LabelInputContainer>
-
-        {/* First & Last Name */}
-        <div className="flex space-x-2">
-          <LabelInputContainer className="flex-1">
-            <Label htmlFor="firstName">First Name</Label>
-            <Input
-              id="firstName"
-              placeholder="John"
-              type="text"
-              value={formData.firstName}
-              onChange={handleChange}
-            />
-          </LabelInputContainer>
-          <LabelInputContainer className="flex-1">
-            <Label htmlFor="lastName">Last Name</Label>
-            <Input
-              id="lastName"
-              placeholder="Doe"
-              type="text"
-              value={formData.lastName}
-              onChange={handleChange}
-            />
-          </LabelInputContainer>
-        </div>
 
         {/* Email */}
         <LabelInputContainer>
@@ -102,30 +77,12 @@ export default function SignupForm() {
           />
         </LabelInputContainer>
 
-        {/* Role */}
-        <LabelInputContainer>
-          <Label htmlFor="role">Service Type</Label>
-          <select
-            id="role"
-            value={formData.role}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-2"
-          >
-            <option value="" disabled>
-              Select Service
-            </option>
-            <option value="hearing">Hearing</option>
-            <option value="speech">Speech</option>
-            <option value="both">Both</option>
-          </select>
-        </LabelInputContainer>
-
         {/* Submit */}
         <button
           type="submit"
           className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 transition"
         >
-          Sign Up
+          Login
         </button>
       </form>
     </div>
