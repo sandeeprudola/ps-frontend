@@ -2,53 +2,29 @@
 
 import { motion } from "framer-motion";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import React from "react";
-import {
-  Autoplay,
-  EffectCoverflow,
-  Navigation,
-  Pagination,
-} from "swiper/modules";
+import React, { useRef } from "react";
+import { Autoplay, EffectCoverflow, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
 import "swiper/css/effect-coverflow";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
-import "swiper/css";
-import "swiper/css/effect-cards";
 
 import { cn } from "@/lib/utils";
 
 const Skiper47 = () => {
   const images = [
-    {
-      src: "/widex1.svg",
-      alt: "Illustrations by my fav AarzooAly",
-    },
-    {
-      src: "/images/x.com/13.jpeg",
-      alt: "Illustrations by my fav AarzooAly",
-    },
-    {
-      src: "/images/x.com/32.jpeg",
-      alt: "Illustrations by my fav AarzooAly",
-    },
-    {
-      src: "/images/x.com/20.jpeg",
-      alt: "Illustrations by my fav AarzooAly",
-    },
-    {
-      src: "/images/x.com/21.jpeg",
-      alt: "Illustrations by my fav AarzooAly",
-    },
-    {
-      src: "/images/x.com/19.jpeg",
-      alt: "Illustrations by my fav AarzooAly",
-    },
+    { src: "/widex1.svg", alt: "Illustrations by my fav AarzooAly" },
+    { src: "/images/x.com/13.jpeg", alt: "Illustrations by my fav AarzooAly" },
+    { src: "/images/x.com/32.jpeg", alt: "Illustrations by my fav AarzooAly" },
+    { src: "/images/x.com/20.jpeg", alt: "Illustrations by my fav AarzooAly" },
+    { src: "/images/x.com/21.jpeg", alt: "Illustrations by my fav AarzooAly" },
+    { src: "/images/x.com/19.jpeg", alt: "Illustrations by my fav AarzooAly" },
   ];
 
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-white">
-      <Carousel_001 className="" images={images} showPagination loop />
+    <div className="flex min-h-[400px] w-full items-center justify-center bg-white px-4">
+      <Carousel_001 images={images} showPagination showNavigation loop autoplay />
     </div>
   );
 };
@@ -72,38 +48,41 @@ const Carousel_001 = ({
   autoplay?: boolean;
   spaceBetween?: number;
 }) => {
-  const css = `
-  .Carousal_001 {
-    padding-bottom: 50px !important;
-  }
-  `;
+  const swiperRef = useRef<any>(null);
+
   return (
     <motion.div
       initial={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{
-        duration: 0.3,
-        delay: 0.5,
-      }}
-      className={cn("w-3xl relative", className)}
+      transition={{ duration: 0.4, delay: 0.3 }}
+      className={cn("w-full max-w-5xl relative", className)}
     >
-      <style>{css}</style>
+      {/* Navigation buttons */}
+      {showNavigation && (
+        <>
+          <div
+            className="absolute top-1/2 -left-6 z-20 cursor-pointer"
+            onClick={() => swiperRef.current?.slidePrev()}
+          >
+            <ChevronLeftIcon className="h-8 w-8 text-gray-800 hover:text-gray-500 transition" />
+          </div>
+          <div
+            className="absolute top-1/2 -right-6 z-20 cursor-pointer"
+            onClick={() => swiperRef.current?.slideNext()}
+          >
+            <ChevronRightIcon className="h-8 w-8 text-gray-800 hover:text-gray-500 transition" />
+          </div>
+        </>
+      )}
 
       <Swiper
+        onSwiper={(swiper) => (swiperRef.current = swiper)}
         spaceBetween={spaceBetween}
-        autoplay={
-          autoplay
-            ? {
-                delay: 1500,
-                disableOnInteraction: false,
-              }
-            : false
-        }
-        effect="coverflow"
-        grabCursor={true}
-        centeredSlides={true}
+        slidesPerView={1.2}
+        centeredSlides
         loop={loop}
-        slidesPerView={2.43}
+        grabCursor
+        effect="coverflow"
         coverflowEffect={{
           rotate: 0,
           slideShadows: false,
@@ -111,43 +90,33 @@ const Carousel_001 = ({
           depth: 100,
           modifier: 2.5,
         }}
-        pagination={
-          showPagination
-            ? {
-                clickable: true,
-              }
+        pagination={showPagination ? { clickable: true } : false}
+        autoplay={
+          autoplay
+            ? { delay: 2500, disableOnInteraction: false }
             : false
         }
-        navigation={
-          showNavigation
-            ? {
-                nextEl: ".swiper-button-next",
-                prevEl: ".swiper-button-prev",
-              }
-            : false
-        }
-        className="Carousal_001"
-        modules={[EffectCoverflow, Autoplay, Pagination, Navigation]}
+        breakpoints={{
+          640: { slidesPerView: 1.3 },
+          768: { slidesPerView: 2 },
+          1024: { slidesPerView: 2.5 },
+          1280: { slidesPerView: 3 },
+        }}
+        modules={[EffectCoverflow, Navigation, Pagination, Autoplay]}
+        className="h-[320px] md:h-[400px]"
       >
         {images.map((image, index) => (
-          <SwiperSlide key={index} className="!h-[320px] w-full rounded-3xl overflow-hidden shadow-lg">
+          <SwiperSlide
+            key={index}
+            className="rounded-3xl overflow-hidden shadow-lg flex items-center justify-center"
+          >
             <img
-              className="h-full w-full object-cover"
               src={image.src}
               alt={image.alt}
+              className="h-full w-full object-cover"
             />
           </SwiperSlide>
         ))}
-        {showNavigation && (
-          <div>
-            <div className="swiper-button-next after:hidden">
-              <ChevronRightIcon className="h-6 w-6 text-white" />
-            </div>
-            <div className="swiper-button-prev after:hidden">
-              <ChevronLeftIcon className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        )}
       </Swiper>
     </motion.div>
   );

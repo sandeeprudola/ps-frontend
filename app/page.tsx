@@ -277,7 +277,8 @@ export default function HeroSectionOne() {
       </div>
     </div>
 
-          <div className="flex h-full w-full items-center justify-center overflow-hidden bg-[#ffff]">
+    <div className="flex w-full items-center justify-center overflow-hidden bg-white py-10">
+
       <Carousel_001 className="" images={images} showPagination loop />
           </div>
       <div className="mt-20 pt-10 px-4">
