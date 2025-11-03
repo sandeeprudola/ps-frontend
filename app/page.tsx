@@ -236,15 +236,16 @@ export default function HeroSectionOne() {
                         font-medium text-white transition-all duration-300 hover:-translate-y-0.5 
                         hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
             >
-              Signin
+              Signup
           </Link>
           <Link
               href="/Login"
-              className="inline-block w-60 text-center transform rounded-lg bg-black px-6 py-2 
-                        font-medium text-white transition-all duration-300 hover:-translate-y-0.5 
-                        hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+              className="inline-block w-60 text-center transform rounded-lg 
+  bg-gray-800 px-6 py-2 font-medium text-white 
+  transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-900
+  dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
             >
-              Signin
+              Login
           </Link>
         </motion.div>
         <motion.div
