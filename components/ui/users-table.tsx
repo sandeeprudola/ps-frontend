@@ -49,6 +49,7 @@ interface UsersTableProps {
   onAddUser: () => void;
 }
 
+
 export const UsersTable = memo(({ onAddUser }: UsersTableProps) => {
   return (
     <div className="border-border bg-card/40 rounded-xl border p-3 sm:p-6">

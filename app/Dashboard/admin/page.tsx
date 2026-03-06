@@ -86,7 +86,7 @@ export default function AdminDashboard() {
 
   const handleAddUser = () => {
     // Redirect to add new user page
-    router.push('/dashboard/new-user');
+    router.push('/adduser');
   };
 
   // ✅ Loading State
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
               {/* Main Content */}
               <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
                 <div className="space-y-4 sm:space-y-6 xl:col-span-2">
-                  <RevenueChart />
+                 
                   <UsersTable onAddUser={handleAddUser} />
                 </div>
 
