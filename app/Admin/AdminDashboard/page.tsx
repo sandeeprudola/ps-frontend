@@ -145,6 +145,24 @@ export default function AdminDashboard() {
       color: 'text-orange-500',
       bgColor: 'bg-orange-500/10',
     },
+    {
+      title: 'Service Due',
+      value: dashboardData?.pendingPayments ?? '0',
+      change: '-2.4%',
+      changeType: 'negative' as const,
+      icon: Eye,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-500/10',
+    },
+    {
+      title: 'Monthly Revenue',
+      value: dashboardData?.pendingPayments ?? '0',
+      change: '-2.4%',
+      changeType: 'negative' as const,
+      icon: Eye,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-500/10',
+    },
   ];
 
   return (

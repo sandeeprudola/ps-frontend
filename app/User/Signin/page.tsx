@@ -4,20 +4,18 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import axios from "axios";
-// ✅ Add this import
-import { useRouter } from "next/navigation";
 
-export default function LoginForm() {
+export default function SignupForm() {
   const [formData, setFormData] = useState({
     username: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
+    role: "",
   });
 
-  // ✅ Initialize router here
-  const router = useRouter();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.id]: e.target.value,
@@ -27,32 +25,24 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/v1/admin/signin",
-        formData
-      );
-      console.log("Signin success:", response.data);
-      alert(`Signin success! Role: ${response.data.role}`);
-
-      // Save token
-      localStorage.setItem("token", response.data.token);
-
-      // ✅ Redirect to admin dashboard
-      router.push("/Dashboard/admin");
+      const response = await axios.post("http://localhost:3000/api/v1/user/signup", formData);
+      console.log("Signup success:", response.data);
+      alert("Signup successful!");
     } catch (error: any) {
-      console.error("Signin failed:", error.response?.data || error.message);
-      alert(error.response?.data?.msg || "Signin failed. Check your credentials.");
+      console.error("Signup failed:", error.response?.data || error.message);
+      alert("Signup failed. Please check your input or try again.");
     }
   };
 
   return (
     <div className="mx-auto w-full max-w-md bg-white p-6 md:p-8 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-2 text-gray-800">Login</h2>
+      <h2 className="text-xl font-bold mb-2 text-gray-800">Sign Up</h2>
       <p className="text-sm text-gray-600 mb-6">
-        Enter your credentials to login
+        Create your account at PS Speech & Hearing
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Username */}
         <LabelInputContainer>
           <Label htmlFor="username">Username</Label>
           <Input
@@ -64,6 +54,31 @@ export default function LoginForm() {
           />
         </LabelInputContainer>
 
+        {/* First & Last Name */}
+        <div className="flex space-x-2">
+          <LabelInputContainer className="flex-1">
+            <Label htmlFor="firstName">First Name</Label>
+            <Input
+              id="firstName"
+              placeholder="John"
+              type="text"
+              value={formData.firstName}
+              onChange={handleChange}
+            />
+          </LabelInputContainer>
+          <LabelInputContainer className="flex-1">
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input
+              id="lastName"
+              placeholder="Doe"
+              type="text"
+              value={formData.lastName}
+              onChange={handleChange}
+            />
+          </LabelInputContainer>
+        </div>
+
+        {/* Email */}
         <LabelInputContainer>
           <Label htmlFor="email">Email</Label>
           <Input
@@ -75,6 +90,7 @@ export default function LoginForm() {
           />
         </LabelInputContainer>
 
+        {/* Password */}
         <LabelInputContainer>
           <Label htmlFor="password">Password</Label>
           <Input
@@ -86,11 +102,30 @@ export default function LoginForm() {
           />
         </LabelInputContainer>
 
+        {/* Role */}
+        <LabelInputContainer>
+          <Label htmlFor="role">Service Type</Label>
+          <select
+            id="role"
+            value={formData.role}
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-2"
+          >
+            <option value="" disabled>
+              Select Service
+            </option>
+            <option value="hearing">Hearing</option>
+            <option value="speech">Speech</option>
+            <option value="both">Both</option>
+          </select>
+        </LabelInputContainer>
+
+        {/* Submit */}
         <button
           type="submit"
           className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 transition"
         >
-          Login
+          Sign Up
         </button>
       </form>
     </div>
