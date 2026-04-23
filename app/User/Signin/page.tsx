@@ -13,6 +13,8 @@ export default function SignupForm() {
     email: "",
     password: "",
     role: "",
+    HearingServices:"",
+    SpeechServices:""
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -117,6 +119,41 @@ export default function SignupForm() {
             <option value="hearing">Hearing</option>
             <option value="speech">Speech</option>
             <option value="both">Both</option>
+          </select>
+        </LabelInputContainer>
+        <LabelInputContainer>
+          <Label htmlFor="HearingServices">Service Type</Label>
+          <select
+            id="HearingServices"
+            value={formData.HearingServices}
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-2"
+          >
+            <option value="" disabled>
+              Select Hearing Services
+            </option>
+            <option value="None">None</option>
+            <option value="a">a</option>
+            <option value="b">b</option>
+            <option value="c">c</option>
+
+          </select>
+        </LabelInputContainer>
+        <LabelInputContainer>
+          <Label htmlFor="SpeechServices">Service Type</Label>
+          <select
+            id="SpeechServices"
+            value={formData.SpeechServices}
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-2"
+          >
+            <option value="" disabled>
+              Select Speech Services
+            </option>
+            <option value="None">None</option>
+            <option value="a">a</option>
+            <option value="b">b</option>
+            <option value="c">c</option>
           </select>
         </LabelInputContainer>
 

@@ -4,17 +4,30 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import axios from "axios";
-// ✅ Add this import
 import { useRouter } from "next/navigation";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000/api/v1";
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { msg?: string; message?: string } | undefined;
+    return data?.msg ?? data?.message ?? fallback;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
     username: "",
-    email: "",
     password: "",
   });
 
-  // ✅ Initialize router here
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,20 +41,18 @@ export default function LoginForm() {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/v1/admin/signin",
+        `${API_BASE_URL}/admin/signin`,
         formData
       );
       console.log("Signin success:", response.data);
-      alert(`Signin success! Role: ${response.data.role}`);
 
-      // Save token
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("ADMIN_TOKEN", response.data.token);
 
-      // ✅ Redirect to admin dashboard
       router.push("/Admin/AdminDashboard");
-    } catch (error: any) {
-      console.error("Signin failed:", error.response?.data || error.message);
-      alert(error.response?.data?.msg || "Signin failed. Check your credentials.");
+    } catch (error: unknown) {
+      console.error("Signin failed:", error);
+      alert(getApiErrorMessage(error, "Signin failed. Check your credentials."));
     }
   };
 
@@ -60,17 +71,6 @@ export default function LoginForm() {
             placeholder="Your username"
             type="text"
             value={formData.username}
-            onChange={handleChange}
-          />
-        </LabelInputContainer>
-
-        <LabelInputContainer>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            placeholder="you@example.com"
-            type="email"
-            value={formData.email}
             onChange={handleChange}
           />
         </LabelInputContainer>

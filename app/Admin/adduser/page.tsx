@@ -6,7 +6,23 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 
-export default function CreateUserForm({ onSuccess }: { onSuccess?: () => void }) {
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000/api/v1";
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { msg?: string; message?: string } | undefined;
+    return data?.msg ?? data?.message ?? fallback;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+export default function CreateUserForm() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -35,14 +51,21 @@ export default function CreateUserForm({ onSuccess }: { onSuccess?: () => void }
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("ADMIN_TOKEN");
+      const token = localStorage.getItem("ADMIN_TOKEN") ?? localStorage.getItem("token");
       if (!token) {
         throw new Error("Admin not authenticated");
       }
 
       const response = await axios.post(
-        "http://localhost:3000/api/v1/admin/adduser",
-        formData,
+        `${API_BASE_URL}/admin/adduser`,
+        {
+          username: formData.username,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -52,9 +75,6 @@ export default function CreateUserForm({ onSuccess }: { onSuccess?: () => void }
 
       console.log("User created:", response.data);
 
-      onSuccess?.();
-
-      // Reset form
       setFormData({
         username: "",
         password: "",
@@ -64,9 +84,9 @@ export default function CreateUserForm({ onSuccess }: { onSuccess?: () => void }
         phone: "",
         serviceType: "both",
       });
-    } catch (err: any) {
-      console.error("Create user failed:", err.response?.data || err.message);
-      setError(err.response?.data?.msg || "Failed to create user");
+    } catch (err: unknown) {
+      console.error("Create user failed:", err);
+      setError(getApiErrorMessage(err, "Failed to create user"));
     } finally {
       setLoading(false);
     }

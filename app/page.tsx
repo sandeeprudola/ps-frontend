@@ -231,7 +231,7 @@ export default function HeroSectionOne() {
           className="relative z-10 mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4"
         >
           <Link
-              href="/Signin"
+              href="/User/Signin"
               className="inline-block w-60 text-center transform rounded-lg bg-black px-6 py-2 
                         font-medium text-white transition-all duration-300 hover:-translate-y-0.5 
                         hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
@@ -239,7 +239,7 @@ export default function HeroSectionOne() {
               Signup
           </Link>
           <Link
-              href="/Login"
+              href="/User/Login"
               className="inline-block w-60 text-center transform rounded-lg 
   bg-gray-800 px-6 py-2 font-medium text-white 
   transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-900

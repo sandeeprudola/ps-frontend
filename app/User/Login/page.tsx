@@ -4,6 +4,23 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import axios from "axios";
+import { useRouter } from "next/navigation";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000/api/v1";
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { msg?: string; message?: string } | undefined;
+    return data?.msg ?? data?.message ?? fallback;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
@@ -11,6 +28,7 @@ export default function LoginForm() {
     email: "",
     password: "",
   });
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -22,14 +40,13 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:3000/api/v1/user/signin", formData);
+      const response = await axios.post(`${API_BASE_URL}/user/signin`, formData);
       console.log("Signin success:", response.data);
-      alert(`Signin success! Role: ${response.data.role}`);
-      // You can save token to localStorage/sessionStorage if needed
       localStorage.setItem("token", response.data.token);
-    } catch (error: any) {
-      console.error("Signin failed:", error.response?.data || error.message);
-      alert(error.response?.data?.msg || "Signin failed. Check your credentials.");
+      router.push("/User/Dashboard");
+    } catch (error: unknown) {
+      console.error("Signin failed:", error);
+      alert(getApiErrorMessage(error, "Signin failed. Check your credentials."));
     }
   };
 

@@ -3,59 +3,64 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Users, BarChart3, Download, Settings } from 'lucide-react';
+import { CalendarPlus, Download, RefreshCw, UserPlus } from 'lucide-react';
 
 interface QuickActionsProps {
   onAddUser: () => void;
+  onViewAppointments?: () => void;
+  onRefresh?: () => void;
   onExport: () => void;
+  isRefreshing?: boolean;
 }
 
 const actions = [
   {
-    icon: Users,
-    label: 'Add New User',
-    color: 'blue',
-    shortcut: 'Ctrl+N',
+    icon: UserPlus,
+    label: 'Add Patient',
+    className: 'text-blue-500 hover:border-blue-500/50 hover:bg-blue-500/10',
     action: 'addUser',
   },
   {
-    icon: BarChart3,
-    label: 'View Analytics',
-    color: 'green',
-    shortcut: 'Ctrl+A',
-    action: 'analytics',
+    icon: CalendarPlus,
+    label: 'View Appointments',
+    className: 'text-emerald-500 hover:border-emerald-500/50 hover:bg-emerald-500/10',
+    action: 'appointments',
   },
   {
     icon: Download,
-    label: 'Export Data',
-    color: 'purple',
-    shortcut: 'Ctrl+E',
+    label: 'Export Dashboard',
+    className: 'text-violet-500 hover:border-violet-500/50 hover:bg-violet-500/10',
     action: 'export',
   },
   {
-    icon: Settings,
-    label: 'System Settings',
-    color: 'orange',
-    shortcut: 'Ctrl+S',
-    action: 'settings',
+    icon: RefreshCw,
+    label: 'Refresh Data',
+    className: 'text-orange-500 hover:border-orange-500/50 hover:bg-orange-500/10',
+    action: 'refresh',
   },
 ];
 
 export const QuickActions = memo(
-  ({ onAddUser, onExport }: QuickActionsProps) => {
+  ({
+    onAddUser,
+    onViewAppointments,
+    onRefresh,
+    onExport,
+    isRefreshing = false,
+  }: QuickActionsProps) => {
     const handleAction = (action: string) => {
       switch (action) {
         case 'addUser':
           onAddUser();
           break;
-        case 'analytics':
-          console.log('Viewing analytics...');
+        case 'appointments':
+          onViewAppointments?.();
           break;
         case 'export':
           onExport();
           break;
-        case 'settings':
-          console.log('Opening settings...');
+        case 'refresh':
+          onRefresh?.();
           break;
       }
     };
@@ -64,7 +69,7 @@ export const QuickActions = memo(
       <div className="border-border bg-card/40 rounded-xl border p-6">
         <h3 className="mb-4 text-xl font-semibold">Quick Actions</h3>
         <div className="space-y-3">
-          {actions.map((action, index) => {
+          {actions.map((action) => {
             const Icon = action.icon;
             return (
               <motion.div
@@ -74,14 +79,14 @@ export const QuickActions = memo(
               >
                 <Button
                   variant="outline"
-                  className={`h-12 w-full justify-start hover:bg-${action.color}-500/10 hover:border-${action.color}-500/50 transition-all duration-200`}
+                  className="h-12 w-full justify-start transition-all duration-200"
                   onClick={() => handleAction(action.action)}
+                  disabled={action.action === 'refresh' && isRefreshing}
                 >
-                  <Icon className={`mr-3 h-5 w-5 text-${action.color}-500`} />
+                  <Icon
+                    className={`mr-3 h-5 w-5 ${action.className.split(' ')[0]} ${action.action === 'refresh' && isRefreshing ? 'animate-spin' : ''}`}
+                  />
                   <span className="font-medium">{action.label}</span>
-                  <div className="text-muted-foreground ml-auto text-xs">
-                    {action.shortcut}
-                  </div>
                 </Button>
               </motion.div>
             );

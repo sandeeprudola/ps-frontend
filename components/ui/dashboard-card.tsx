@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, type LucideIcon } from 'lucide-react';
 
 interface DashboardCardProps {
   stat: {
@@ -10,7 +10,7 @@ interface DashboardCardProps {
     value: string;
     change: string;
     changeType: 'positive' | 'negative';
-    icon: any;
+    icon: LucideIcon;
     color: string;
     bgColor: string;
   };
