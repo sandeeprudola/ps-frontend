@@ -1,28 +1,26 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import axios from "axios";
+import { useAuthGuard } from "@/hooks/use-auth-guard";
+import { api, getApiErrorMessage } from "@/lib/api";
+import { clearStoredTokens, createAuthHeaders } from "@/lib/auth";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000/api/v1";
-
-const getApiErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { msg?: string; message?: string } | undefined;
-    return data?.msg ?? data?.message ?? fallback;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
-};
+const isUnauthorizedError = (error: unknown) =>
+  typeof error === "object" &&
+  error !== null &&
+  "response" in error &&
+  (error as { response?: { status?: number } }).response?.status === 401;
 
 export default function CreateUserForm() {
+  const router = useRouter();
+  const { token, isCheckingAuth } = useAuthGuard({
+    role: "admin",
+    redirectTo: "/Admin/AdminLogin",
+  });
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -31,6 +29,8 @@ export default function CreateUserForm() {
     email: "",
     phone: "",
     serviceType: "both",
+    HearingServices: "None",
+    SpeechServices: "None",
   });
 
   const [loading, setLoading] = useState(false);
@@ -51,13 +51,12 @@ export default function CreateUserForm() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("ADMIN_TOKEN") ?? localStorage.getItem("token");
       if (!token) {
         throw new Error("Admin not authenticated");
       }
 
-      const response = await axios.post(
-        `${API_BASE_URL}/admin/adduser`,
+      const response = await api.post(
+        "/admin/adduser",
         {
           username: formData.username,
           password: formData.password,
@@ -65,11 +64,12 @@ export default function CreateUserForm() {
           lastName: formData.lastName,
           email: formData.email,
           phone: formData.phone,
+          role: formData.serviceType,
+          HearingServices: formData.HearingServices,
+          SpeechServices: formData.SpeechServices,
         },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: createAuthHeaders("admin"),
         }
       );
 
@@ -83,14 +83,28 @@ export default function CreateUserForm() {
         email: "",
         phone: "",
         serviceType: "both",
+        HearingServices: "None",
+        SpeechServices: "None",
       });
     } catch (err: unknown) {
       console.error("Create user failed:", err);
+      if (isUnauthorizedError(err)) {
+        clearStoredTokens();
+        router.replace("/Admin/AdminLogin");
+      }
       setError(getApiErrorMessage(err, "Failed to create user"));
     } finally {
       setLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Checking admin access...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-md rounded-lg bg-white p-6 shadow-md">
@@ -186,6 +200,36 @@ export default function CreateUserForm() {
             <option value="speech">Speech</option>
             <option value="hearing">Hearing</option>
             <option value="both">Both</option>
+          </select>
+        </LabelInputContainer>
+
+        <LabelInputContainer>
+          <Label htmlFor="HearingServices">Hearing Services</Label>
+          <select
+            id="HearingServices"
+            value={formData.HearingServices}
+            onChange={handleChange}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="None">None</option>
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
+          </select>
+        </LabelInputContainer>
+
+        <LabelInputContainer>
+          <Label htmlFor="SpeechServices">Speech Services</Label>
+          <select
+            id="SpeechServices"
+            value={formData.SpeechServices}
+            onChange={handleChange}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="None">None</option>
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
           </select>
         </LabelInputContainer>
 

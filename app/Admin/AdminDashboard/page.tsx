@@ -1,23 +1,45 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { Activity, CalendarCheck, CreditCard, ShieldCheck, Stethoscope, Users } from 'lucide-react';
+import {
+  Activity,
+  CalendarCheck,
+  CreditCard,
+  ShieldCheck,
+  Stethoscope,
+  Users,
+} from 'lucide-react';
+
+import { ActiveStaffCard } from '@/components/dashboard/admin/active-staff-card';
+import { AdminAccessPanel } from '@/components/dashboard/admin/admin-access-panel';
+import {
+  AdminAnalyticsPanel,
+} from '@/components/dashboard/admin/admin-analytics-panel';
+import {
+  AdminAppointmentManagement,
+  type AdminAppointmentRecord,
+} from '@/components/dashboard/admin/admin-appointment-management';
+import {
+  AdminStaffManagement,
+  type AdminStaffRecord,
+} from '@/components/dashboard/admin/admin-staff-management';
+import {
+  AdminUserManagement,
+  type AdminUserRecord,
+} from '@/components/dashboard/admin/admin-user-management';
+import { AdminSidebar } from '@/components/ui/admin-sidebar';
 import { DashboardCard } from '@/components/ui/dashboard-card';
-import { UsersTable, type DashboardUser } from '@/components/ui/users-table';
-import { QuickActions } from '@/components/ui/quick-actions';
-import TodayScheduleTable from '@/components/ui/TodayScheduleTable';
+import { DashboardHeader } from '@/components/ui/dashboard-header';
 import {
   RecentActivity,
   type DashboardAppointment,
 } from '@/components/ui/recent-activity';
-import { DashboardHeader } from '@/components/ui/dashboard-header';
-import { AdminSidebar } from '@/components/ui/admin-sidebar';
-import axios, { AxiosError } from 'axios';
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000/api/v1';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import TodayScheduleTable from '@/components/ui/TodayScheduleTable';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { api, getApiErrorMessage } from '@/lib/api';
+import { clearStoredTokens, createAuthHeaders } from '@/lib/auth';
 
 type DashboardSummary = {
   totalUsers: number;
@@ -34,21 +56,13 @@ type AdminProfile = {
   lastName?: string;
   email?: string;
   role?: string;
-};
-
-type StaffMember = {
-  _id: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  role?: string;
-  specialization?: string;
-  isActive?: boolean;
+  caninvite?: boolean;
 };
 
 type StatsResponse = {
   status?: { status: string; count: number }[];
-  payments?: { paymentStatus: string; count: number }[];
+  types?: { type: string; count: number }[];
+  daily?: { date: string; count: number }[];
   topStaff?: {
     staffId: string;
     name: string;
@@ -56,77 +70,70 @@ type StatsResponse = {
     specialization?: string;
     count: number;
   }[];
+  payments?: { paymentStatus: string; count: number }[];
 };
 
-const getStoredAdminToken = () => {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token') ?? localStorage.getItem('ADMIN_TOKEN');
-};
-
-const getAuthHeaders = () => ({
-  Authorization: `Bearer ${getStoredAdminToken()}`,
-});
-
-const getStaffName = (staff: StaffMember) => {
+const getStaffName = (staff: AdminStaffRecord) => {
   const name = `${staff.firstName ?? ''} ${staff.lastName ?? ''}`.trim();
   return name || staff.email || 'Unnamed staff';
 };
 
-const getApiErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { msg?: string; message?: string } | undefined;
-    return data?.msg ?? data?.message ?? fallback;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
-};
+const isUnauthorizedError = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  'response' in error &&
+  (error as { response?: { status?: number } }).response?.status === 401;
 
 export default function AdminDashboard() {
+  const router = useRouter();
+  const { token, isCheckingAuth } = useAuthGuard({
+    role: 'admin',
+    redirectTo: '/Admin/AdminLogin',
+  });
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [todaySchedule, setTodaySchedule] = useState<DashboardAppointment[]>([]);
-  const [users, setUsers] = useState<DashboardUser[]>([]);
+  const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [usersTotal, setUsersTotal] = useState(0);
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [appointments, setAppointments] = useState<DashboardAppointment[]>([]);
+  const [staff, setStaff] = useState<AdminStaffRecord[]>([]);
+  const [appointments, setAppointments] = useState<AdminAppointmentRecord[]>([]);
   const [statsData, setStatsData] = useState<StatsResponse | null>(null);
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const router = useRouter();
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
+  const [savingAppointmentId, setSavingAppointmentId] = useState<string | null>(null);
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
-    const token = getStoredAdminToken();
-    if (!token) {
-      router.replace('/Admin/AdminLogin');
-      return;
-    }
+    if (!token) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const headers = getAuthHeaders();
+      const headers = createAuthHeaders('admin');
       const [dashboardRes, adminRes, usersRes, staffRes, appointmentsRes, statsRes] =
         await Promise.all([
-          axios.get(`${API_BASE_URL}/admin/dashboard`, { headers }),
-          axios.get(`${API_BASE_URL}/admin/me`, { headers }),
-          axios.get(`${API_BASE_URL}/admin/users`, {
+          api.get('/admin/dashboard', { headers }),
+          api.get('/admin/me', { headers }),
+          api.get('/admin/users', {
             headers,
-            params: { limit: 6, q: searchQuery || undefined },
+            params: { limit: 20, q: searchQuery || undefined },
           }),
-          axios.get(`${API_BASE_URL}/admin/staff`, { headers, params: { limit: 5 } }),
-          axios.get(`${API_BASE_URL}/admin/appointments`, {
+          api.get('/admin/staff', {
             headers,
-            params: { limit: 6 },
+            params: { limit: 20, q: searchQuery || undefined },
           }),
-          axios.get(`${API_BASE_URL}/admin/stats`, { headers }),
+          api.get('/admin/appointments', {
+            headers,
+            params: { limit: 20 },
+          }),
+          api.get('/admin/stats', { headers }),
         ]);
 
       setSummary(dashboardRes.data.summary);
@@ -137,20 +144,21 @@ export default function AdminDashboard() {
       setStaff(staffRes.data.items ?? []);
       setAppointments(appointmentsRes.data.items ?? []);
       setStatsData(statsRes.data ?? null);
-    } catch (err: unknown) {
-      console.error(err);
-      if ((err as AxiosError).response?.status === 401) {
+    } catch (requestError: unknown) {
+      if (isUnauthorizedError(requestError)) {
+        clearStoredTokens();
         router.replace('/Admin/AdminLogin');
       }
-      setError(getApiErrorMessage(err, 'Failed to load admin dashboard'));
+      setError(getApiErrorMessage(requestError, 'Failed to load admin dashboard'));
     } finally {
       setLoading(false);
     }
-  }, [router, searchQuery]);
+  }, [router, searchQuery, token]);
 
   useEffect(() => {
+    if (!token) return;
     fetchDashboardData();
-  }, [fetchDashboardData]);
+  }, [fetchDashboardData, token]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -179,11 +187,172 @@ export default function AdminDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  const handleAddUser = () => {
-    router.push('/Admin/adduser');
+  const handleLogout = () => {
+    clearStoredTokens();
+    router.replace('/Admin/AdminLogin');
   };
 
-  if (loading) {
+  const updateUser = async (
+    id: string,
+    payload: {
+      firstName: string;
+      lastName: string;
+      role: string;
+      HearingServices: string;
+      SpeechServices: string;
+    },
+  ) => {
+    try {
+      setSavingUserId(id);
+      setActionMessage(null);
+
+      const response = await api.put(`/admin/users/${id}`, payload, {
+        headers: createAuthHeaders('admin'),
+      });
+
+      setUsers((current) =>
+        current.map((item) => (item._id === id ? response.data.user ?? item : item)),
+      );
+      setActionMessage('User updated successfully.');
+    } catch (requestError: unknown) {
+      if (isUnauthorizedError(requestError)) {
+        handleLogout();
+        return;
+      }
+      setActionMessage(getApiErrorMessage(requestError, 'Failed to update user.'));
+    } finally {
+      setSavingUserId(null);
+    }
+  };
+
+  const updateStaff = async (
+    id: string,
+    payload: {
+      firstName: string;
+      lastName: string;
+      phone: string;
+      role: string;
+      specialization: string;
+      isActive: boolean;
+    },
+  ) => {
+    try {
+      setSavingStaffId(id);
+      setActionMessage(null);
+
+      const response = await api.put(`/admin/staff/${id}`, payload, {
+        headers: createAuthHeaders('admin'),
+      });
+
+      setStaff((current) =>
+        current.map((item) => (item._id === id ? response.data.staff ?? item : item)),
+      );
+      setActionMessage('Staff updated successfully.');
+    } catch (requestError: unknown) {
+      if (isUnauthorizedError(requestError)) {
+        handleLogout();
+        return;
+      }
+      setActionMessage(getApiErrorMessage(requestError, 'Failed to update staff.'));
+    } finally {
+      setSavingStaffId(null);
+    }
+  };
+
+  const updateAppointment = async (
+    id: string,
+    payload: {
+      appointmentdate: string;
+      status: string;
+      appointmentType: string;
+      priority: string;
+      paymentStatus: string;
+      duration: string;
+      notes: string;
+    },
+  ) => {
+    try {
+      setSavingAppointmentId(id);
+      setActionMessage(null);
+
+      const response = await api.put(
+        `/admin/appointments/${id}`,
+        {
+          ...payload,
+          duration: Number(payload.duration),
+          appointmentdate: payload.appointmentdate
+            ? new Date(payload.appointmentdate).toISOString()
+            : undefined,
+        },
+        {
+          headers: createAuthHeaders('admin'),
+        },
+      );
+
+      setAppointments((current) =>
+        current.map((item) =>
+          item._id === id ? response.data.appointment ?? item : item,
+        ),
+      );
+      setActionMessage('Appointment updated successfully.');
+    } catch (requestError: unknown) {
+      if (isUnauthorizedError(requestError)) {
+        handleLogout();
+        return;
+      }
+      setActionMessage(
+        getApiErrorMessage(requestError, 'Failed to update appointment.'),
+      );
+    } finally {
+      setSavingAppointmentId(null);
+    }
+  };
+
+  const createAdmin = async (payload: {
+    username: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    role: 'admin' | 'super-admin';
+    caninvite: boolean;
+  }) => {
+    try {
+      setCreatingAdmin(true);
+      setActionMessage(null);
+      await api.post('/admin/signup', payload, {
+        headers: createAuthHeaders('admin'),
+      });
+      setActionMessage('Admin account created successfully.');
+      await fetchDashboardData();
+    } catch (requestError: unknown) {
+      if (isUnauthorizedError(requestError)) {
+        handleLogout();
+        return;
+      }
+      setActionMessage(getApiErrorMessage(requestError, 'Failed to create admin.'));
+    } finally {
+      setCreatingAdmin(false);
+    }
+  };
+
+  const filteredAppointments = useMemo(() => {
+    if (!searchQuery) return appointments;
+    const normalized = searchQuery.toLowerCase();
+    return appointments.filter((appointment) => {
+      const patientName = `${appointment.patient?.firstName ?? ''} ${appointment.patient?.lastName ?? ''}`.toLowerCase();
+      const staffName = `${appointment.staff?.firstName ?? ''} ${appointment.staff?.lastName ?? ''}`.toLowerCase();
+      return (
+        patientName.includes(normalized) ||
+        staffName.includes(normalized) ||
+        String(appointment.status ?? '').toLowerCase().includes(normalized) ||
+        String(appointment.appointmentType ?? '').toLowerCase().includes(normalized) ||
+        String(appointment.paymentStatus ?? '').toLowerCase().includes(normalized)
+      );
+    });
+  }, [appointments, searchQuery]);
+
+  if (isCheckingAuth || loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <p>Loading dashboard...</p>
@@ -191,7 +360,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // ✅ Error State
   if (error) {
     return (
       <div className="flex h-screen items-center justify-center text-red-500">
@@ -210,7 +378,7 @@ export default function AdminDashboard() {
     {
       title: 'Total Users',
       value: String(summary?.totalUsers ?? 0),
-      change: `${usersTotal} listed`,
+      change: `${usersTotal} loaded`,
       changeType: 'positive' as const,
       icon: Users,
       color: 'text-blue-500',
@@ -219,7 +387,7 @@ export default function AdminDashboard() {
     {
       title: 'Total Staff',
       value: String(summary?.totalEmp ?? 0),
-      change: `${staff.length} recent`,
+      change: `${staff.length} in panel`,
       changeType: 'positive' as const,
       icon: Stethoscope,
       color: 'text-green-500',
@@ -228,7 +396,7 @@ export default function AdminDashboard() {
     {
       title: 'Today Appointments',
       value: String(summary?.todayAppointments ?? 0),
-      change: `${todaySchedule.length} loaded`,
+      change: `${todaySchedule.length} shown`,
       changeType: 'positive' as const,
       icon: Activity,
       color: 'text-purple-500',
@@ -265,8 +433,12 @@ export default function AdminDashboard() {
 
   return (
     <SidebarProvider>
-      <AdminSidebar />
-      <SidebarInset>
+      <AdminSidebar
+        adminName={adminName}
+        adminRole={admin?.role}
+        onLogout={handleLogout}
+      />
+      <SidebarInset className="bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#f1f5f9_100%)]">
         <DashboardHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -275,83 +447,90 @@ export default function AdminDashboard() {
           isRefreshing={isRefreshing}
         />
 
-        <div className="flex flex-1 flex-col gap-2 p-2 pt-0 sm:gap-4 sm:p-4">
-          <div className="min-h-[calc(100vh-4rem)] flex-1 rounded-lg p-3 sm:rounded-xl sm:p-4 md:p-6">
-            <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6">
-              <div className="px-2 sm:px-0">
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                  Welcome {adminName}
+        <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+          <section
+            id="overview"
+            className="rounded-[1.9rem] border border-slate-200 bg-white/85 p-6 shadow-[0_25px_70px_-35px_rgba(15,23,42,0.35)] backdrop-blur"
+          >
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  Command Center
+                </p>
+                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                  Welcome back, {adminName}
                 </h1>
-                <p className="text-muted-foreground text-sm sm:text-base">
-                  Live clinic activity from users, staff, appointments, and payments.
+                <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+                  This panel now covers dashboard analytics, patient updates, staff
+                  management, appointment editing, and admin access controls from the
+                  backend admin routes.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-                {stats.map((stat, index) => (
-                  <DashboardCard key={stat.title} stat={stat} index={index} />
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
-                <div className="space-y-4 sm:space-y-6 xl:col-span-2">
-                  <TodayScheduleTable schedule={todaySchedule} />
-                  <UsersTable
-                    users={users}
-                    total={usersTotal}
-                    onAddUser={handleAddUser}
-                  />
+              <div className="rounded-2xl bg-slate-950 px-5 py-4 text-white shadow-lg shadow-slate-300">
+                <div className="text-xs uppercase tracking-[0.2em] text-slate-300">
+                  Search scope
                 </div>
-
-                <div className="space-y-4 sm:space-y-6">
-                  <QuickActions
-                    onAddUser={handleAddUser}
-                    onViewAppointments={() => router.push('#appointments')}
-                    onRefresh={handleRefresh}
-                    onExport={handleExport}
-                    isRefreshing={isRefreshing}
-                  />
-
-                  <RecentActivity appointments={appointments} />
-
-                  <div className="border-border bg-card/40 rounded-xl border p-6">
-                    <h3 className="mb-4 text-xl font-semibold">Active Staff</h3>
-                    <div className="space-y-3">
-                      {staff.length === 0 && (
-                        <div className="border-border text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
-                          No staff records found.
-                        </div>
-                      )}
-                      {staff.map((member) => (
-                        <div
-                          key={member._id}
-                          className="hover:bg-accent/50 flex items-center justify-between rounded-lg p-2 transition-colors"
-                        >
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-medium">
-                              {getStaffName(member)}
-                            </div>
-                            <div className="text-muted-foreground truncate text-xs">
-                              {member.specialization || member.role || 'Staff'}
-                            </div>
-                          </div>
-                          <span
-                            className={`rounded-full px-2 py-1 text-xs font-medium ${
-                              member.isActive === false
-                                ? 'bg-red-500/10 text-red-500'
-                                : 'bg-green-500/10 text-green-500'
-                            }`}
-                          >
-                            {member.isActive === false ? 'Inactive' : 'Active'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="mt-1 text-sm font-medium">
+                  Users, staff, and appointments
                 </div>
               </div>
             </div>
+
+            {actionMessage ? (
+              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {actionMessage}
+              </div>
+            ) : null}
+
+            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              {stats.map((stat, index) => (
+                <DashboardCard key={stat.title} stat={stat} index={index} />
+              ))}
+            </div>
+          </section>
+
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+            <TodayScheduleTable schedule={todaySchedule} />
+            <div className="space-y-6">
+              <RecentActivity appointments={appointments as DashboardAppointment[]} />
+              <ActiveStaffCard staff={staff} getStaffName={getStaffName} />
+            </div>
           </div>
+
+          <AdminAnalyticsPanel
+            status={statsData?.status ?? []}
+            types={statsData?.types ?? []}
+            payments={statsData?.payments ?? []}
+            daily={statsData?.daily ?? []}
+            topStaff={statsData?.topStaff ?? []}
+          />
+
+          <AdminUserManagement
+            users={users}
+            total={usersTotal}
+            onSave={updateUser}
+            savingId={savingUserId}
+          />
+
+          <AdminStaffManagement
+            staff={staff}
+            onSave={updateStaff}
+            savingId={savingStaffId}
+          />
+
+          <AdminAppointmentManagement
+            appointments={filteredAppointments}
+            onSave={updateAppointment}
+            savingId={savingAppointmentId}
+          />
+
+          <AdminAccessPanel
+            currentRole={admin?.role}
+            canInvite={admin?.caninvite}
+            onCreateAdmin={createAdmin}
+            creating={creatingAdmin}
+          />
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -1,27 +1,27 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
 import {
   CalendarDays,
   CreditCard,
   FileClock,
   Receipt,
-  Save,
   ShieldCheck,
-  UserCircle2,
   Wrench,
 } from 'lucide-react';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { DashboardHeader } from '@/components/ui/dashboard-header';
-import { DashboardCard } from '@/components/ui/dashboard-card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { UserSidebar } from '@/components/ui/user-sidebar';
 import { useRouter } from 'next/navigation';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000/api/v1';
+import { AccountBasicsForm } from '@/components/dashboard/user/account-basics-form';
+import { CareSnapshotCard } from '@/components/dashboard/user/care-snapshot-card';
+import { PatientProfileForm } from '@/components/dashboard/user/patient-profile-form';
+import { DashboardTableCard } from '@/components/dashboard/shared/dashboard-table-card';
+import { DashboardCard } from '@/components/ui/dashboard-card';
+import { DashboardHeader } from '@/components/ui/dashboard-header';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { UserSidebar } from '@/components/ui/user-sidebar';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { api, getApiErrorMessage } from '@/lib/api';
+import { clearStoredTokens, createAuthHeaders } from '@/lib/auth';
 
 type StaffRef = {
   _id?: string;
@@ -163,33 +163,6 @@ type UserMeResponse = {
 
 type SearchableValue = string | number | undefined | null;
 
-type ApiErrorData = {
-  msg?: string;
-  message?: string;
-};
-
-const getStoredUserToken = () => {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token');
-};
-
-const authHeaders = () => ({
-  Authorization: `Bearer ${getStoredUserToken()}`,
-});
-
-const getApiErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as ApiErrorData | undefined;
-    return data?.msg ?? data?.message ?? fallback;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
-};
-
 const fullName = (person?: StaffRef | null) => {
   const value = `${person?.firstName ?? ''} ${person?.lastName ?? ''}`.trim();
   return value || person?.email || 'Not assigned';
@@ -229,8 +202,19 @@ const matchesSearch = (query: string, values: SearchableValue[]) => {
   );
 };
 
+const isUnauthorizedError = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  'response' in error &&
+  (error as { response?: { status?: number } }).response?.status === 401;
+
 export default function UserDashboard() {
   const router = useRouter();
+  const { token, isCheckingAuth } = useAuthGuard({
+    role: 'user',
+    redirectTo: '/User/Login',
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -313,17 +297,13 @@ export default function UserDashboard() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    const token = getStoredUserToken();
-    if (!token) {
-      router.replace('/User/Login');
-      return;
-    }
+    if (!token) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const headers = authHeaders();
+      const headers = createAuthHeaders('user');
       const [
         dashboardRes,
         meRes,
@@ -333,13 +313,15 @@ export default function UserDashboard() {
         ticketsRes,
         emiRes,
       ] = await Promise.all([
-        axios.get<DashboardResponse>(`${API_BASE_URL}/user/dashboard`, { headers }),
-        axios.get<UserMeResponse>(`${API_BASE_URL}/user/me`, { headers }),
-        axios.get<{ appointments: Appointment[] }>(`${API_BASE_URL}/user/appointments`, { headers }),
-        axios.get<{ sales: Sale[] }>(`${API_BASE_URL}/user/sales`, { headers }),
-        axios.get<{ payments: Payment[] }>(`${API_BASE_URL}/user/payments`, { headers }),
-        axios.get<{ tickets: ServiceTicket[] }>(`${API_BASE_URL}/user/service-tickets`, { headers }),
-        axios.get<{ installments: EmiInstallment[] }>(`${API_BASE_URL}/user/emi-installments`, { headers }),
+        api.get<DashboardResponse>('/user/dashboard', { headers }),
+        api.get<UserMeResponse>('/user/me', { headers }),
+        api.get<{ appointments: Appointment[] }>('/user/appointments', { headers }),
+        api.get<{ sales: Sale[] }>('/user/sales', { headers }),
+        api.get<{ payments: Payment[] }>('/user/payments', { headers }),
+        api.get<{ tickets: ServiceTicket[] }>('/user/service-tickets', { headers }),
+        api.get<{ installments: EmiInstallment[] }>('/user/emi-installments', {
+          headers,
+        }),
       ]);
 
       setDashboard(dashboardRes.data);
@@ -350,18 +332,20 @@ export default function UserDashboard() {
       setTickets(ticketsRes.data.tickets ?? []);
       setEmiInstallments(emiRes.data.installments ?? []);
     } catch (requestError: unknown) {
-      if (axios.isAxiosError(requestError) && requestError.response?.status === 401) {
+      if (isUnauthorizedError(requestError)) {
+        clearStoredTokens();
         router.replace('/User/Login');
       }
       setError(getApiErrorMessage(requestError, 'Failed to load user dashboard'));
     } finally {
       setLoading(false);
     }
-  }, [applyUserData, router]);
+  }, [applyUserData, router, token]);
 
   useEffect(() => {
+    if (!token) return;
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, token]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -391,11 +375,17 @@ export default function UserDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  const handleAccountChange = (field: keyof typeof accountForm, value: string) => {
+  const handleAccountChange = (
+    field: keyof typeof accountForm,
+    value: string,
+  ) => {
     setAccountForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleProfileChange = (field: keyof typeof profileForm, value: string) => {
+  const handleProfileChange = (
+    field: keyof typeof profileForm,
+    value: string,
+  ) => {
     setProfileForm((current) => ({ ...current, [field]: value }));
   };
 
@@ -403,11 +393,9 @@ export default function UserDashboard() {
     try {
       setSavingAccount(true);
       setAccountMessage(null);
-      await axios.put(
-        `${API_BASE_URL}/user/update`,
-        accountForm,
-        { headers: authHeaders() },
-      );
+      await api.put('/user/update', accountForm, {
+        headers: createAuthHeaders('user'),
+      });
 
       setUser((current) =>
         current
@@ -421,6 +409,10 @@ export default function UserDashboard() {
       );
       setAccountMessage('Account details updated.');
     } catch (requestError: unknown) {
+      if (isUnauthorizedError(requestError)) {
+        clearStoredTokens();
+        router.replace('/User/Login');
+      }
       setAccountMessage(getApiErrorMessage(requestError, 'Failed to update account.'));
     } finally {
       setSavingAccount(false);
@@ -457,15 +449,19 @@ export default function UserDashboard() {
     try {
       setSavingProfile(true);
       setProfileMessage(null);
-      const response = await axios.put<{ profile: PatientProfile }>(
-        `${API_BASE_URL}/user/profile`,
+      const response = await api.put<{ profile: PatientProfile }>(
+        '/user/profile',
         payload,
-        { headers: authHeaders() },
+        { headers: createAuthHeaders('user') },
       );
 
       setProfile(response.data.profile);
       setProfileMessage('Profile saved successfully.');
     } catch (requestError: unknown) {
+      if (isUnauthorizedError(requestError)) {
+        clearStoredTokens();
+        router.replace('/User/Login');
+      }
       setProfileMessage(getApiErrorMessage(requestError, 'Failed to save profile.'));
     } finally {
       setSavingProfile(false);
@@ -579,7 +575,8 @@ export default function UserDashboard() {
       title: 'EMI Remaining',
       value: formatCurrency(pendingEmiAmount),
       change: `${emiInstallments.length} installments`,
-      changeType: pendingEmiAmount > 0 ? ('negative' as const) : ('positive' as const),
+      changeType:
+        pendingEmiAmount > 0 ? ('negative' as const) : ('positive' as const),
       icon: FileClock,
       color: 'text-cyan-500',
       bgColor: 'bg-cyan-500/10',
@@ -606,7 +603,7 @@ export default function UserDashboard() {
     },
   ];
 
-  if (loading) {
+  if (isCheckingAuth || loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <p>Loading dashboard...</p>
@@ -621,6 +618,16 @@ export default function UserDashboard() {
       </div>
     );
   }
+
+  const assignedTherapistLabel =
+    typeof profile?.assignedTherapist === 'string'
+      ? profile.assignedTherapist
+      : fullName(profile?.assignedTherapist as StaffRef | undefined);
+
+  const assignedAudiologistLabel =
+    typeof profile?.assignedAudiologist === 'string'
+      ? profile.assignedAudiologist
+      : fullName(profile?.assignedAudiologist as StaffRef | undefined);
 
   return (
     <SidebarProvider>
@@ -643,7 +650,8 @@ export default function UserDashboard() {
                     Welcome {user?.firstName || user?.username}
                   </h1>
                   <p className="text-muted-foreground text-sm sm:text-base">
-                    Your appointments, payments, devices, service requests, and care profile in one place.
+                    Your appointments, payments, devices, service requests, and care
+                    profile in one place.
                   </p>
                 </div>
 
@@ -655,542 +663,144 @@ export default function UserDashboard() {
               </section>
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-                <section
-                  id="profile"
-                  className="border-border bg-card/40 rounded-xl border p-6 xl:col-span-1"
-                >
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="bg-primary/10 text-primary rounded-lg p-3">
-                      <UserCircle2 className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold">Care Snapshot</h2>
-                      <p className="text-muted-foreground text-sm">
-                        Assigned team and upcoming care details.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 text-sm">
-                    <div className="rounded-lg border p-3">
-                      <div className="text-muted-foreground text-xs">Email</div>
-                      <div className="font-medium">{user?.email ?? '-'}</div>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="text-muted-foreground text-xs">Next Appointment</div>
-                      <div className="font-medium">
-                        {dashboard?.nextAppointment
-                          ? formatDateTime(dashboard.nextAppointment.appointmentdate)
-                          : 'No upcoming appointment'}
-                      </div>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="text-muted-foreground text-xs">Assigned Therapist</div>
-                      <div className="font-medium">
-                        {typeof profile?.assignedTherapist === 'string'
-                          ? profile.assignedTherapist
-                          : fullName(profile?.assignedTherapist as StaffRef | undefined)}
-                      </div>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="text-muted-foreground text-xs">Assigned Audiologist</div>
-                      <div className="font-medium">
-                        {typeof profile?.assignedAudiologist === 'string'
-                          ? profile.assignedAudiologist
-                          : fullName(profile?.assignedAudiologist as StaffRef | undefined)}
-                      </div>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="text-muted-foreground text-xs">Follow-up Date</div>
-                      <div className="font-medium">{formatDate(profile?.nextFollowUpDate)}</div>
-                    </div>
-                  </div>
-                </section>
+                <CareSnapshotCard
+                  email={user?.email}
+                  nextAppointmentLabel={
+                    dashboard?.nextAppointment
+                      ? formatDateTime(dashboard.nextAppointment.appointmentdate)
+                      : 'No upcoming appointment'
+                  }
+                  assignedTherapistLabel={assignedTherapistLabel}
+                  assignedAudiologistLabel={assignedAudiologistLabel}
+                  followUpDateLabel={formatDate(profile?.nextFollowUpDate)}
+                />
 
                 <section className="space-y-4 xl:col-span-2">
-                  <div
+                  <DashboardTableCard
                     id="appointments"
-                    className="border-border bg-card/40 rounded-xl border p-6"
-                  >
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <div>
-                        <h2 className="text-lg font-semibold">Appointments</h2>
-                        <p className="text-muted-foreground text-sm">
-                          All appointment records available from the backend.
-                        </p>
-                      </div>
-                      <span className="text-muted-foreground text-sm">
-                        {filteredAppointments.length} shown
-                      </span>
-                    </div>
+                    title="Appointments"
+                    description="All appointment records available from the backend."
+                    countLabel={`${filteredAppointments.length} shown`}
+                    columns={['Date', 'Type', 'Staff', 'Status', 'Payment']}
+                    minWidthClass="min-w-[720px]"
+                    rows={filteredAppointments.map((appointment) => ({
+                      key: appointment._id,
+                      cells: [
+                        formatDateTime(appointment.appointmentdate),
+                        appointment.appointmentType ?? '-',
+                        fullName(appointment.staff),
+                        appointment.status ?? '-',
+                        appointment.paymentStatus ?? '-',
+                      ],
+                    }))}
+                    emptyMessage="No appointments found."
+                  />
 
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[720px] text-left text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="py-2">Date</th>
-                            <th>Type</th>
-                            <th>Staff</th>
-                            <th>Status</th>
-                            <th>Payment</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredAppointments.map((appointment) => (
-                            <tr key={appointment._id} className="border-b last:border-0">
-                              <td className="py-3">{formatDateTime(appointment.appointmentdate)}</td>
-                              <td>{appointment.appointmentType ?? '-'}</td>
-                              <td>{fullName(appointment.staff)}</td>
-                              <td>{appointment.status ?? '-'}</td>
-                              <td>{appointment.paymentStatus ?? '-'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  <div id="sales" className="border-border bg-card/40 rounded-xl border p-6">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <div>
-                        <h2 className="text-lg font-semibold">Sales & Devices</h2>
-                        <p className="text-muted-foreground text-sm">
-                          Hearing aid or device purchase history.
-                        </p>
-                      </div>
-                      <span className="text-muted-foreground text-sm">
-                        {filteredSales.length} shown
-                      </span>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[760px] text-left text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="py-2">Device</th>
-                            <th>Sale Date</th>
-                            <th>Mode</th>
-                            <th>Final</th>
-                            <th>Due</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredSales.map((sale) => (
-                            <tr key={sale._id} className="border-b last:border-0">
-                              <td className="py-3">
-                                <div className="font-medium">
-                                  {sale.brand} {sale.model}
-                                </div>
-                                <div className="text-muted-foreground text-xs">
-                                  {sale.serialNumber || 'No serial'}
-                                </div>
-                              </td>
-                              <td>{formatDate(sale.saleDate)}</td>
-                              <td>{sale.paymentMode}</td>
-                              <td>{formatCurrency(sale.finalAmount)}</td>
-                              <td>{formatCurrency(sale.dueAmount)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <DashboardTableCard
+                    id="sales"
+                    title="Sales & Devices"
+                    description="Hearing aid or device purchase history."
+                    countLabel={`${filteredSales.length} shown`}
+                    columns={['Device', 'Sale Date', 'Mode', 'Final', 'Due']}
+                    minWidthClass="min-w-[760px]"
+                    rows={filteredSales.map((sale) => ({
+                      key: sale._id,
+                      cells: [
+                        <>
+                          <div className="font-medium">
+                            {sale.brand} {sale.model}
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            {sale.serialNumber || 'No serial'}
+                          </div>
+                        </>,
+                        formatDate(sale.saleDate),
+                        sale.paymentMode,
+                        formatCurrency(sale.finalAmount),
+                        formatCurrency(sale.dueAmount),
+                      ],
+                    }))}
+                    emptyMessage="No device sales found."
+                  />
                 </section>
               </div>
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <section id="payments" className="border-border bg-card/40 rounded-xl border p-6">
-                  <div className="mb-4">
-                    <h2 className="text-lg font-semibold">Payments</h2>
-                    <p className="text-muted-foreground text-sm">
-                      Collection history tied to your orders.
-                    </p>
-                  </div>
+                <DashboardTableCard
+                  id="payments"
+                  title="Payments"
+                  description="Collection history tied to your orders."
+                  columns={['Paid On', 'Amount', 'Method', 'Reference']}
+                  rows={filteredPayments.map((payment) => ({
+                    key: payment._id,
+                    cells: [
+                      formatDate(payment.paidAt),
+                      formatCurrency(payment.amount),
+                      payment.method,
+                      payment.referenceNumber || '-',
+                    ],
+                  }))}
+                  emptyMessage="No payments recorded."
+                />
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[620px] text-left text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="py-2">Paid On</th>
-                          <th>Amount</th>
-                          <th>Method</th>
-                          <th>Reference</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredPayments.map((payment) => (
-                          <tr key={payment._id} className="border-b last:border-0">
-                            <td className="py-3">{formatDate(payment.paidAt)}</td>
-                            <td>{formatCurrency(payment.amount)}</td>
-                            <td>{payment.method}</td>
-                            <td>{payment.referenceNumber || '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-
-                <section id="service-tickets" className="border-border bg-card/40 rounded-xl border p-6">
-                  <div className="mb-4">
-                    <h2 className="text-lg font-semibold">Service Tickets</h2>
-                    <p className="text-muted-foreground text-sm">
-                      Repair and after-sales service requests.
-                    </p>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[620px] text-left text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="py-2">Title</th>
-                          <th>Type</th>
-                          <th>Status</th>
-                          <th>Due Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredTickets.map((ticket) => (
-                          <tr key={ticket._id} className="border-b last:border-0">
-                            <td className="py-3">
-                              <div className="font-medium">{ticket.title}</div>
-                              <div className="text-muted-foreground text-xs">
-                                {ticket.sale?.brand} {ticket.sale?.model}
-                              </div>
-                            </td>
-                            <td>{ticket.type}</td>
-                            <td>{ticket.status ?? '-'}</td>
-                            <td>{formatDate(ticket.dueDate)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
+                <DashboardTableCard
+                  id="service-tickets"
+                  title="Service Tickets"
+                  description="Repair and after-sales service requests."
+                  columns={['Title', 'Type', 'Status', 'Due Date']}
+                  rows={filteredTickets.map((ticket) => ({
+                    key: ticket._id,
+                    cells: [
+                      <>
+                        <div className="font-medium">{ticket.title}</div>
+                        <div className="text-muted-foreground text-xs">
+                          {ticket.sale?.brand} {ticket.sale?.model}
+                        </div>
+                      </>,
+                      ticket.type,
+                      ticket.status ?? '-',
+                      formatDate(ticket.dueDate),
+                    ],
+                  }))}
+                  emptyMessage="No service tickets found."
+                />
               </div>
 
-              <section id="emi" className="border-border bg-card/40 rounded-xl border p-6">
-                <div className="mb-4">
-                  <h2 className="text-lg font-semibold">EMI Installments</h2>
-                  <p className="text-muted-foreground text-sm">
-                    Due dates, status, and payment-linked installment records.
-                  </p>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-left text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-2">Installment</th>
-                        <th>Device</th>
-                        <th>Due Date</th>
-                        <th>Status</th>
-                        <th>Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredEmi.map((installment) => (
-                        <tr key={installment._id} className="border-b last:border-0">
-                          <td className="py-3">#{installment.installmentNumber}</td>
-                          <td>
-                            {installment.sale?.brand} {installment.sale?.model}
-                          </td>
-                          <td>{formatDate(installment.dueDate)}</td>
-                          <td>{installment.status}</td>
-                          <td>{formatCurrency(installment.amount)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
+              <DashboardTableCard
+                id="emi"
+                title="EMI Installments"
+                description="Due dates, status, and payment-linked installment records."
+                columns={['Installment', 'Device', 'Due Date', 'Status', 'Amount']}
+                minWidthClass="min-w-[760px]"
+                rows={filteredEmi.map((installment) => ({
+                  key: installment._id,
+                  cells: [
+                    `#${installment.installmentNumber}`,
+                    `${installment.sale?.brand ?? ''} ${installment.sale?.model ?? ''}`.trim(),
+                    formatDate(installment.dueDate),
+                    installment.status,
+                    formatCurrency(installment.amount),
+                  ],
+                }))}
+                emptyMessage="No EMI installments found."
+              />
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <section className="border-border bg-card/40 rounded-xl border p-6">
-                  <div className="mb-4">
-                    <h2 className="text-lg font-semibold">Account Basics</h2>
-                    <p className="text-muted-foreground text-sm">
-                      Updates the `/user/update` backend endpoint.
-                    </p>
-                  </div>
+                <AccountBasicsForm
+                  form={accountForm}
+                  onChange={handleAccountChange}
+                  onSave={saveAccount}
+                  message={accountMessage}
+                  saving={savingAccount}
+                />
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Username</label>
-                      <Input
-                        value={accountForm.username}
-                        onChange={(event) =>
-                          handleAccountChange('username', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">First Name</label>
-                      <Input
-                        value={accountForm.firstName}
-                        onChange={(event) =>
-                          handleAccountChange('firstName', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <label className="text-sm font-medium">Last Name</label>
-                      <Input
-                        value={accountForm.lastName}
-                        onChange={(event) =>
-                          handleAccountChange('lastName', event.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <p className="text-muted-foreground text-sm">
-                      {accountMessage ?? ' '}
-                    </p>
-                    <Button onClick={saveAccount} disabled={savingAccount}>
-                      <Save className="mr-2 h-4 w-4" />
-                      {savingAccount ? 'Saving...' : 'Save Account'}
-                    </Button>
-                  </div>
-                </section>
-
-                <section className="border-border bg-card/40 rounded-xl border p-6">
-                  <div className="mb-4">
-                    <h2 className="text-lg font-semibold">Patient Profile</h2>
-                    <p className="text-muted-foreground text-sm">
-                      Writes to `/user/profile` with the full backend-supported profile shape.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Phone</label>
-                      <Input
-                        value={profileForm.phone}
-                        onChange={(event) =>
-                          handleProfileChange('phone', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Alternate Phone</label>
-                      <Input
-                        value={profileForm.alternatePhone}
-                        onChange={(event) =>
-                          handleProfileChange('alternatePhone', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Gender</label>
-                      <select
-                        className="border-input bg-background flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs"
-                        value={profileForm.gender}
-                        onChange={(event) =>
-                          handleProfileChange('gender', event.target.value)
-                        }
-                      >
-                        <option value="">Select gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                        <option value="prefer-not-to-say">Prefer not to say</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Date of Birth</label>
-                      <Input
-                        type="date"
-                        value={profileForm.dob}
-                        onChange={(event) =>
-                          handleProfileChange('dob', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Guardian Name</label>
-                      <Input
-                        value={profileForm.guardianName}
-                        onChange={(event) =>
-                          handleProfileChange('guardianName', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Relation</label>
-                      <Input
-                        value={profileForm.relationWithPatient}
-                        onChange={(event) =>
-                          handleProfileChange('relationWithPatient', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Emergency Contact Name</label>
-                      <Input
-                        value={profileForm.emergencyContactName}
-                        onChange={(event) =>
-                          handleProfileChange('emergencyContactName', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Emergency Contact Phone</label>
-                      <Input
-                        value={profileForm.emergencyContactPhone}
-                        onChange={(event) =>
-                          handleProfileChange('emergencyContactPhone', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <label className="text-sm font-medium">Address Line 1</label>
-                      <Input
-                        value={profileForm.addressLine1}
-                        onChange={(event) =>
-                          handleProfileChange('addressLine1', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <label className="text-sm font-medium">Address Line 2</label>
-                      <Input
-                        value={profileForm.addressLine2}
-                        onChange={(event) =>
-                          handleProfileChange('addressLine2', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">City</label>
-                      <Input
-                        value={profileForm.city}
-                        onChange={(event) =>
-                          handleProfileChange('city', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">State</label>
-                      <Input
-                        value={profileForm.state}
-                        onChange={(event) =>
-                          handleProfileChange('state', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Pincode</label>
-                      <Input
-                        value={profileForm.pincode}
-                        onChange={(event) =>
-                          handleProfileChange('pincode', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Lead Source</label>
-                      <Input
-                        value={profileForm.leadSource}
-                        onChange={(event) =>
-                          handleProfileChange('leadSource', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Referred By</label>
-                      <Input
-                        value={profileForm.referredBy}
-                        onChange={(event) =>
-                          handleProfileChange('referredBy', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Primary Concern</label>
-                      <select
-                        className="border-input bg-background flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs"
-                        value={profileForm.primaryConcern}
-                        onChange={(event) =>
-                          handleProfileChange('primaryConcern', event.target.value)
-                        }
-                      >
-                        <option value="">Select concern</option>
-                        <option value="hearing">Hearing</option>
-                        <option value="speech">Speech</option>
-                        <option value="both">Both</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Case Status</label>
-                      <select
-                        className="border-input bg-background flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs"
-                        value={profileForm.caseStatus}
-                        onChange={(event) =>
-                          handleProfileChange('caseStatus', event.target.value)
-                        }
-                      >
-                        <option value="">Select case status</option>
-                        <option value="active">Active</option>
-                        <option value="on-hold">On Hold</option>
-                        <option value="completed">Completed</option>
-                        <option value="dropped">Dropped</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <label className="text-sm font-medium">Diagnosis</label>
-                      <textarea
-                        className="border-input bg-background flex min-h-[84px] w-full rounded-md border px-3 py-2 text-sm shadow-xs"
-                        value={profileForm.diagnosis}
-                        onChange={(event) =>
-                          handleProfileChange('diagnosis', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <label className="text-sm font-medium">Medical History</label>
-                      <textarea
-                        className="border-input bg-background flex min-h-[96px] w-full rounded-md border px-3 py-2 text-sm shadow-xs"
-                        value={profileForm.medicalHistory}
-                        onChange={(event) =>
-                          handleProfileChange('medicalHistory', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <label className="text-sm font-medium">Clinical Notes</label>
-                      <textarea
-                        className="border-input bg-background flex min-h-[96px] w-full rounded-md border px-3 py-2 text-sm shadow-xs"
-                        value={profileForm.clinicalNotes}
-                        onChange={(event) =>
-                          handleProfileChange('clinicalNotes', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Next Follow-up Date</label>
-                      <Input
-                        type="date"
-                        value={profileForm.nextFollowUpDate}
-                        onChange={(event) =>
-                          handleProfileChange('nextFollowUpDate', event.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <p className="text-muted-foreground text-sm">
-                      {profileMessage ?? ' '}
-                    </p>
-                    <Button onClick={saveProfile} disabled={savingProfile}>
-                      <Save className="mr-2 h-4 w-4" />
-                      {savingProfile ? 'Saving...' : 'Save Profile'}
-                    </Button>
-                  </div>
-                </section>
+                <PatientProfileForm
+                  form={profileForm}
+                  onChange={handleProfileChange}
+                  onSave={saveProfile}
+                  message={profileMessage}
+                  saving={savingProfile}
+                />
               </div>
             </div>
           </div>

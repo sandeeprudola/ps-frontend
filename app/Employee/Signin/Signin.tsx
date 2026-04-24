@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import axios from "axios";
+import { api, getApiErrorMessage } from "@/lib/api";
 
 export default function SignupForm() {
   const [formData, setFormData] = useState({
@@ -25,12 +25,12 @@ export default function SignupForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:3000/api/v1/user/signup", formData);
+      const response = await api.post("/user/signup", formData);
       console.log("Signup success:", response.data);
       alert("Signup successful!");
-    } catch (error: any) {
-      console.error("Signup failed:", error.response?.data || error.message);
-      alert("Signup failed. Please check your input or try again.");
+    } catch (error: unknown) {
+      console.error("Signup failed:", error);
+      alert(getApiErrorMessage(error, "Signup failed. Please check your input or try again."));
     }
   };
 

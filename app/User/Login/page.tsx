@@ -3,24 +3,9 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import axios from "axios";
 import { useRouter } from "next/navigation";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000/api/v1";
-
-const getApiErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { msg?: string; message?: string } | undefined;
-    return data?.msg ?? data?.message ?? fallback;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
-};
+import { api, getApiErrorMessage } from "@/lib/api";
+import { setUserToken } from "@/lib/auth";
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
@@ -40,9 +25,9 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${API_BASE_URL}/user/signin`, formData);
+      const response = await api.post("/user/signin", formData);
       console.log("Signin success:", response.data);
-      localStorage.setItem("token", response.data.token);
+      setUserToken(response.data.token);
       router.push("/User/Dashboard");
     } catch (error: unknown) {
       console.error("Signin failed:", error);
