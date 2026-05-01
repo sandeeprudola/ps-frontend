@@ -27,8 +27,11 @@ export default function LoginForm() {
     try {
       const response = await api.post("/user/signin", formData);
       console.log("Signin success:", response.data);
+      if (!response.data.token) {
+        throw new Error("Login succeeded but no token was returned.");
+      }
       setUserToken(response.data.token);
-      router.push("/User/Dashboard");
+      router.replace("/User/Dashboard");
     } catch (error: unknown) {
       console.error("Signin failed:", error);
       alert(getApiErrorMessage(error, "Signin failed. Check your credentials."));

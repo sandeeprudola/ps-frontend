@@ -6,6 +6,9 @@ import { useTheme } from 'next-themes';
 import {
   BarChart3,
   CalendarClock,
+  ClipboardCheck,
+  Boxes,
+  FileBarChart,
   LogOut,
   Moon,
   ShieldCheck,
@@ -36,7 +39,11 @@ const primaryItems = [
   { title: 'Analytics', icon: BarChart3, href: '#analytics' },
   { title: 'Users', icon: Users, href: '#users' },
   { title: 'Staff', icon: UsersRound, href: '#staff' },
+  { title: 'Attendance', icon: ClipboardCheck, href: '#attendance' },
   { title: 'Appointments', icon: CalendarClock, href: '#appointments' },
+  { title: 'Leads', icon: UserCog, href: '#leads' },
+  { title: 'Inventory', icon: Boxes, href: '#inventory' },
+  { title: 'Reports', icon: FileBarChart, href: '#reports' },
 ];
 
 const secondaryItems = [

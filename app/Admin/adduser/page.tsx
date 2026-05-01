@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useAuthGuard } from "@/hooks/use-auth-guard";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { clearStoredTokens, createAuthHeaders } from "@/lib/auth";
+import { HEARING_SERVICES, SPEECH_SERVICES } from "@/lib/service-catalog";
 
 const isUnauthorizedError = (error: unknown) =>
   typeof error === "object" &&
@@ -211,10 +212,11 @@ export default function CreateUserForm() {
             onChange={handleChange}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="None">None</option>
-            <option value="a">A</option>
-            <option value="b">B</option>
-            <option value="c">C</option>
+            {HEARING_SERVICES.map((service) => (
+              <option key={service} value={service}>
+                {service}
+              </option>
+            ))}
           </select>
         </LabelInputContainer>
 
@@ -226,10 +228,11 @@ export default function CreateUserForm() {
             onChange={handleChange}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="None">None</option>
-            <option value="a">A</option>
-            <option value="b">B</option>
-            <option value="c">C</option>
+            {SPEECH_SERVICES.map((service) => (
+              <option key={service} value={service}>
+                {service}
+              </option>
+            ))}
           </select>
         </LabelInputContainer>
 

@@ -4,6 +4,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { api, getApiErrorMessage } from "@/lib/api";
+import { setUserToken } from "@/lib/auth";
+import { HEARING_SERVICES, SPEECH_SERVICES } from "@/lib/service-catalog";
+import { useRouter } from "next/navigation";
 
 export default function SignupForm() {
   const [formData, setFormData] = useState({
@@ -16,6 +19,7 @@ export default function SignupForm() {
     HearingServices:"",
     SpeechServices:""
   });
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -29,7 +33,8 @@ export default function SignupForm() {
     try {
       const response = await api.post("/user/signup", formData);
       console.log("Signup success:", response.data);
-      alert("Signup successful!");
+      setUserToken(response.data.token);
+      router.push("/User/Dashboard");
     } catch (error: unknown) {
       console.error("Signup failed:", error);
       alert(getApiErrorMessage(error, "Signup failed. Please check your input or try again."));
@@ -122,7 +127,7 @@ export default function SignupForm() {
           </select>
         </LabelInputContainer>
         <LabelInputContainer>
-          <Label htmlFor="HearingServices">Service Type</Label>
+          <Label htmlFor="HearingServices">Hearing Service</Label>
           <select
             id="HearingServices"
             value={formData.HearingServices}
@@ -130,17 +135,17 @@ export default function SignupForm() {
             className="border border-gray-300 rounded-md p-2"
           >
             <option value="" disabled>
-              Select Hearing Services
+              Select Hearing Service
             </option>
-            <option value="None">None</option>
-            <option value="a">a</option>
-            <option value="b">b</option>
-            <option value="c">c</option>
-
+            {HEARING_SERVICES.map((service) => (
+              <option key={service} value={service}>
+                {service}
+              </option>
+            ))}
           </select>
         </LabelInputContainer>
         <LabelInputContainer>
-          <Label htmlFor="SpeechServices">Service Type</Label>
+          <Label htmlFor="SpeechServices">Speech / OT Service</Label>
           <select
             id="SpeechServices"
             value={formData.SpeechServices}
@@ -148,12 +153,13 @@ export default function SignupForm() {
             className="border border-gray-300 rounded-md p-2"
           >
             <option value="" disabled>
-              Select Speech Services
+              Select Speech / OT Service
             </option>
-            <option value="None">None</option>
-            <option value="a">a</option>
-            <option value="b">b</option>
-            <option value="c">c</option>
+            {SPEECH_SERVICES.map((service) => (
+              <option key={service} value={service}>
+                {service}
+              </option>
+            ))}
           </select>
         </LabelInputContainer>
 

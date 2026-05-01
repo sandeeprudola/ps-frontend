@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PaginationControls } from '@/components/dashboard/shared/pagination-controls';
+import { HEARING_SERVICES, SPEECH_SERVICES } from '@/lib/service-catalog';
 
 export type AdminUserRecord = {
   _id: string;
@@ -29,14 +31,20 @@ type UserDraft = {
 interface AdminUserManagementProps {
   users: AdminUserRecord[];
   total: number;
+  currentPage: number;
+  totalPages: number;
   onSave: (id: string, payload: UserDraft) => Promise<void>;
+  onPageChange: (page: number) => void;
   savingId?: string | null;
 }
 
 export function AdminUserManagement({
   users,
   total,
+  currentPage,
+  totalPages,
   onSave,
+  onPageChange,
   savingId,
 }: AdminUserManagementProps) {
   const [drafts, setDrafts] = useState<Record<string, UserDraft>>({});
@@ -147,10 +155,11 @@ export function AdminUserManagement({
                       updateDraft(user._id, 'HearingServices', event.target.value)
                     }
                   >
-                    <option value="None">Hearing: None</option>
-                    <option value="a">Hearing: A</option>
-                    <option value="b">Hearing: B</option>
-                    <option value="c">Hearing: C</option>
+                    {HEARING_SERVICES.map((service) => (
+                      <option key={service} value={service}>
+                        {service}
+                      </option>
+                    ))}
                   </select>
                   <select
                     className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
@@ -159,10 +168,11 @@ export function AdminUserManagement({
                       updateDraft(user._id, 'SpeechServices', event.target.value)
                     }
                   >
-                    <option value="None">Speech: None</option>
-                    <option value="a">Speech: A</option>
-                    <option value="b">Speech: B</option>
-                    <option value="c">Speech: C</option>
+                    {SPEECH_SERVICES.map((service) => (
+                      <option key={service} value={service}>
+                        {service}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -179,6 +189,14 @@ export function AdminUserManagement({
           })
         )}
       </div>
+
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={total}
+        itemLabel="users"
+        onPageChange={onPageChange}
+      />
     </section>
   );
 }

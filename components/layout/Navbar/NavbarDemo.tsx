@@ -29,8 +29,8 @@ export const NavbarDemo = () => {
       <NavBody>
         <NavbarLogo />
         <NavItems items={navItems} />
-        <NavbarButton href="#get-started" variant="gradient">
-          Get Started
+        <NavbarButton href="/User/Login" variant="gradient">
+          Login
         </NavbarButton>
       </NavBody>
 
@@ -55,8 +55,8 @@ export const NavbarDemo = () => {
               {item.name}
             </a>
           ))}
-          <NavbarButton href="#get-started" className="mt-2" variant="gradient">
-            Get Started
+          <NavbarButton href="/User/Login" className="mt-2" variant="gradient">
+            Login
           </NavbarButton>
         </MobileNavMenu>
       </MobileNav>

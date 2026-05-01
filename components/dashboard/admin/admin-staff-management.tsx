@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PaginationControls } from '@/components/dashboard/shared/pagination-controls';
 
 export type AdminStaffRecord = {
   _id: string;
@@ -27,13 +28,21 @@ type StaffDraft = {
 
 interface AdminStaffManagementProps {
   staff: AdminStaffRecord[];
+  total: number;
+  currentPage: number;
+  totalPages: number;
   onSave: (id: string, payload: StaffDraft) => Promise<void>;
+  onPageChange: (page: number) => void;
   savingId?: string | null;
 }
 
 export function AdminStaffManagement({
   staff,
+  total,
+  currentPage,
+  totalPages,
   onSave,
+  onPageChange,
   savingId,
 }: AdminStaffManagementProps) {
   const [drafts, setDrafts] = useState<Record<string, StaffDraft>>({});
@@ -176,6 +185,14 @@ export function AdminStaffManagement({
           })
         )}
       </div>
+
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={total}
+        itemLabel="staff records"
+        onPageChange={onPageChange}
+      />
     </section>
   );
 }

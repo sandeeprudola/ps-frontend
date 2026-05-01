@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PaginationControls } from '@/components/dashboard/shared/pagination-controls';
 
 export type AdminAppointmentRecord = {
   _id: string;
@@ -38,7 +39,11 @@ type AppointmentDraft = {
 
 interface AdminAppointmentManagementProps {
   appointments: AdminAppointmentRecord[];
+  total: number;
+  currentPage: number;
+  totalPages: number;
   onSave: (id: string, payload: AppointmentDraft) => Promise<void>;
+  onPageChange: (page: number) => void;
   savingId?: string | null;
 }
 
@@ -55,7 +60,11 @@ const toDateTimeInput = (value?: string) =>
 
 export function AdminAppointmentManagement({
   appointments,
+  total,
+  currentPage,
+  totalPages,
   onSave,
+  onPageChange,
   savingId,
 }: AdminAppointmentManagementProps) {
   const [drafts, setDrafts] = useState<Record<string, AppointmentDraft>>({});
@@ -220,6 +229,14 @@ export function AdminAppointmentManagement({
           })
         )}
       </div>
+
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={total}
+        itemLabel="appointments"
+        onPageChange={onPageChange}
+      />
     </section>
   );
 }

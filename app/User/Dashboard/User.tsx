@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Bell,
   CalendarDays,
+  CalendarPlus,
   CreditCard,
   FileClock,
   Receipt,
@@ -15,8 +17,11 @@ import { AccountBasicsForm } from '@/components/dashboard/user/account-basics-fo
 import { CareSnapshotCard } from '@/components/dashboard/user/care-snapshot-card';
 import { PatientProfileForm } from '@/components/dashboard/user/patient-profile-form';
 import { DashboardTableCard } from '@/components/dashboard/shared/dashboard-table-card';
+import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/ui/dashboard-card';
 import { DashboardHeader } from '@/components/ui/dashboard-header';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { UserSidebar } from '@/components/ui/user-sidebar';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -30,6 +35,10 @@ type StaffRef = {
   email?: string;
   role?: string;
   specialization?: string;
+};
+
+type StaffOption = StaffRef & {
+  _id: string;
 };
 
 type UserAccount = {
@@ -145,6 +154,16 @@ type EmiInstallment = {
   };
 };
 
+type Reminder = {
+  id: string;
+  type: string;
+  title: string;
+  dueDate: string;
+  status?: string;
+  amount?: number;
+  detail?: string;
+};
+
 type DashboardResponse = {
   user: {
     firstName?: string;
@@ -232,6 +251,19 @@ export default function UserDashboard() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [tickets, setTickets] = useState<ServiceTicket[]>([]);
   const [emiInstallments, setEmiInstallments] = useState<EmiInstallment[]>([]);
+  const [staffOptions, setStaffOptions] = useState<StaffOption[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [bookingMessage, setBookingMessage] = useState<string | null>(null);
+  const [booking, setBooking] = useState(false);
+
+  const [bookingForm, setBookingForm] = useState({
+    staff: '',
+    appointmentdate: '',
+    duration: '30',
+    appointmentType: 'consultation',
+    priority: 'normal',
+    notes: '',
+  });
 
   const [accountForm, setAccountForm] = useState({
     username: '',
@@ -312,6 +344,8 @@ export default function UserDashboard() {
         paymentsRes,
         ticketsRes,
         emiRes,
+        staffRes,
+        remindersRes,
       ] = await Promise.all([
         api.get<DashboardResponse>('/user/dashboard', { headers }),
         api.get<UserMeResponse>('/user/me', { headers }),
@@ -322,6 +356,8 @@ export default function UserDashboard() {
         api.get<{ installments: EmiInstallment[] }>('/user/emi-installments', {
           headers,
         }),
+        api.get<{ staff: StaffOption[] }>('/appointment/staff-list'),
+        api.get<{ reminders: Reminder[] }>('/user/reminders', { headers }),
       ]);
 
       setDashboard(dashboardRes.data);
@@ -331,6 +367,8 @@ export default function UserDashboard() {
       setPayments(paymentsRes.data.payments ?? []);
       setTickets(ticketsRes.data.tickets ?? []);
       setEmiInstallments(emiRes.data.installments ?? []);
+      setStaffOptions(staffRes.data.staff ?? []);
+      setReminders(remindersRes.data.reminders ?? []);
     } catch (requestError: unknown) {
       if (isUnauthorizedError(requestError)) {
         clearStoredTokens();
@@ -468,6 +506,56 @@ export default function UserDashboard() {
     }
   };
 
+  const handleBookingChange = (
+    field: keyof typeof bookingForm,
+    value: string,
+  ) => {
+    setBookingForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const bookAppointment = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    try {
+      setBooking(true);
+      setBookingMessage(null);
+
+      await api.post(
+        '/appointment/user',
+        {
+          staff: bookingForm.staff,
+          appointmentdate: new Date(bookingForm.appointmentdate).toISOString(),
+          duration: Number(bookingForm.duration),
+          appointmentType: bookingForm.appointmentType,
+          priority: bookingForm.priority,
+          notes: bookingForm.notes || undefined,
+        },
+        { headers: createAuthHeaders('user') },
+      );
+
+      setBookingForm({
+        staff: '',
+        appointmentdate: '',
+        duration: '30',
+        appointmentType: 'consultation',
+        priority: 'normal',
+        notes: '',
+      });
+      setBookingMessage('Appointment booked successfully.');
+      await fetchData();
+    } catch (requestError: unknown) {
+      if (isUnauthorizedError(requestError)) {
+        clearStoredTokens();
+        router.replace('/User/Login');
+      }
+      setBookingMessage(
+        getApiErrorMessage(requestError, 'Failed to book appointment.'),
+      );
+    } finally {
+      setBooking(false);
+    }
+  };
+
   const filteredAppointments = useMemo(
     () =>
       appointments.filter((appointment) =>
@@ -535,6 +623,20 @@ export default function UserDashboard() {
         ]),
       ),
     [emiInstallments, searchQuery],
+  );
+
+  const filteredReminders = useMemo(
+    () =>
+      reminders.filter((reminder) =>
+        matchesSearch(searchQuery, [
+          reminder.type,
+          reminder.title,
+          reminder.status,
+          reminder.detail,
+          reminder.amount,
+        ]),
+      ),
+    [reminders, searchQuery],
   );
 
   const totalDue = sales.reduce((sum, sale) => sum + (sale.dueAmount ?? 0), 0);
@@ -676,6 +778,129 @@ export default function UserDashboard() {
                 />
 
                 <section className="space-y-4 xl:col-span-2">
+                  <section
+                    id="book-appointment"
+                    className="border-border bg-card/40 rounded-xl border p-6"
+                  >
+                    <div className="mb-4 flex items-start gap-3">
+                      <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-lg">
+                        <CalendarPlus className="size-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-semibold">Book Appointment</h2>
+                        <p className="text-muted-foreground text-sm">
+                          Choose a clinician, time, appointment type, and priority.
+                        </p>
+                      </div>
+                    </div>
+
+                    <form onSubmit={bookAppointment} className="space-y-4">
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="appointment-staff">Staff</Label>
+                          <select
+                            id="appointment-staff"
+                            className="border-input bg-background flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs"
+                            value={bookingForm.staff}
+                            onChange={(event) =>
+                              handleBookingChange('staff', event.target.value)
+                            }
+                            required
+                          >
+                            <option value="">Select staff</option>
+                            {staffOptions.map((staff) => (
+                              <option key={staff._id} value={staff._id}>
+                                {fullName(staff)} · {staff.specialization ?? staff.role}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="appointment-date">Date and Time</Label>
+                          <Input
+                            id="appointment-date"
+                            type="datetime-local"
+                            value={bookingForm.appointmentdate}
+                            onChange={(event) =>
+                              handleBookingChange('appointmentdate', event.target.value)
+                            }
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="appointment-duration">Duration</Label>
+                          <select
+                            id="appointment-duration"
+                            className="border-input bg-background flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs"
+                            value={bookingForm.duration}
+                            onChange={(event) =>
+                              handleBookingChange('duration', event.target.value)
+                            }
+                          >
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                            <option value="90">90 minutes</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="appointment-type">Type</Label>
+                          <select
+                            id="appointment-type"
+                            className="border-input bg-background flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs"
+                            value={bookingForm.appointmentType}
+                            onChange={(event) =>
+                              handleBookingChange('appointmentType', event.target.value)
+                            }
+                          >
+                            <option value="consultation">Consultation</option>
+                            <option value="speech-therapy">Speech Therapy</option>
+                            <option value="hearing-test">Hearing Test</option>
+                            <option value="followup">Follow-up</option>
+                            <option value="emergency">Emergency</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="appointment-priority">Priority</Label>
+                          <select
+                            id="appointment-priority"
+                            className="border-input bg-background flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs"
+                            value={bookingForm.priority}
+                            onChange={(event) =>
+                              handleBookingChange('priority', event.target.value)
+                            }
+                          >
+                            <option value="low">Low</option>
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                            <option value="emergency">Emergency</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="appointment-notes">Notes</Label>
+                          <Input
+                            id="appointment-notes"
+                            value={bookingForm.notes}
+                            onChange={(event) =>
+                              handleBookingChange('notes', event.target.value)
+                            }
+                            placeholder="Optional"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-muted-foreground text-sm">
+                          {bookingMessage ?? 'Appointments can be booked during clinic hours.'}
+                        </p>
+                        <Button type="submit" disabled={booking}>
+                          <CalendarPlus className="mr-2 size-4" />
+                          {booking ? 'Booking...' : 'Book Appointment'}
+                        </Button>
+                      </div>
+                    </form>
+                  </section>
+
                   <DashboardTableCard
                     id="appointments"
                     title="Appointments"
@@ -724,6 +949,57 @@ export default function UserDashboard() {
                   />
                 </section>
               </div>
+
+              <section
+                id="reminders"
+                className="border-border bg-card/40 rounded-xl border p-6"
+              >
+                <div className="mb-4 flex items-start gap-3">
+                  <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-lg">
+                    <Bell className="size-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold">Reminders & Follow-ups</h2>
+                    <p className="text-muted-foreground text-sm">
+                      Upcoming follow-ups, service due dates, warranty/AMC reminders, and EMI dues.
+                    </p>
+                  </div>
+                </div>
+
+                {filteredReminders.length === 0 ? (
+                  <div className="border-border text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
+                    No upcoming reminders in the next 45 days.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {filteredReminders.map((reminder) => (
+                      <div key={reminder.id} className="rounded-lg border p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-medium">{reminder.title}</div>
+                            <div className="text-muted-foreground mt-1 text-xs">
+                              {reminder.type} · {formatDate(reminder.dueDate)}
+                            </div>
+                          </div>
+                          <span className="rounded-full bg-slate-900 px-2 py-1 text-xs font-medium text-white">
+                            {reminder.status ?? 'upcoming'}
+                          </span>
+                        </div>
+                        {reminder.detail ? (
+                          <p className="text-muted-foreground mt-3 text-sm">
+                            {reminder.detail}
+                          </p>
+                        ) : null}
+                        {typeof reminder.amount === 'number' ? (
+                          <div className="mt-3 text-sm font-semibold">
+                            {formatCurrency(reminder.amount)}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <DashboardTableCard

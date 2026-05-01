@@ -3,8 +3,9 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import { api, getApiErrorMessage } from "@/lib/api";
-import { setUserToken } from "@/lib/auth";
+import { setEmployeeToken } from "@/lib/auth";
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ export default function LoginForm() {
     email: "",
     password: "",
   });
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -23,10 +25,10 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await api.post("/user/signin", formData);
+      const response = await api.post("/employee/signin", formData);
       console.log("Signin success:", response.data);
-      alert(`Signin success! Role: ${response.data.role}`);
-      setUserToken(response.data.token);
+      setEmployeeToken(response.data.token);
+      router.push("/Employee/Dashboard");
     } catch (error: unknown) {
       console.error("Signin failed:", error);
       alert(getApiErrorMessage(error, "Signin failed. Check your credentials."));
@@ -35,9 +37,9 @@ export default function LoginForm() {
 
   return (
     <div className="mx-auto w-full max-w-md bg-white p-6 md:p-8 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-2 text-gray-800">Login</h2>
+      <h2 className="text-xl font-bold mb-2 text-gray-800">Employee Login</h2>
       <p className="text-sm text-gray-600 mb-6">
-        Enter your credentials to login
+        Enter your staff credentials to login
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">

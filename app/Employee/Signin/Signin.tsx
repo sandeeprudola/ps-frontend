@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { api, getApiErrorMessage } from "@/lib/api";
+import { setEmployeeToken } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 export default function SignupForm() {
   const [formData, setFormData] = useState({
@@ -11,9 +13,12 @@ export default function SignupForm() {
     firstName: "",
     lastName: "",
     email: "",
+    phone: "",
     password: "",
-    role: "",
+    role: "receptionist",
+    specialization: "",
   });
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -25,9 +30,10 @@ export default function SignupForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await api.post("/user/signup", formData);
+      const response = await api.post("/employee/signup", formData);
       console.log("Signup success:", response.data);
-      alert("Signup successful!");
+      setEmployeeToken(response.data.token);
+      router.push("/Employee/Dashboard");
     } catch (error: unknown) {
       console.error("Signup failed:", error);
       alert(getApiErrorMessage(error, "Signup failed. Please check your input or try again."));
@@ -36,9 +42,9 @@ export default function SignupForm() {
 
   return (
     <div className="mx-auto w-full max-w-md bg-white p-6 md:p-8 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-2 text-gray-800">Sign Up</h2>
+      <h2 className="text-xl font-bold mb-2 text-gray-800">Employee Sign Up</h2>
       <p className="text-sm text-gray-600 mb-6">
-        Create your account at PS Speech & Hearing
+        Create a staff account at PS Speech & Hearing
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -50,6 +56,17 @@ export default function SignupForm() {
             placeholder="Your username"
             type="text"
             value={formData.username}
+            onChange={handleChange}
+          />
+        </LabelInputContainer>
+
+        <LabelInputContainer>
+          <Label htmlFor="phone">Phone</Label>
+          <Input
+            id="phone"
+            placeholder="+91 98765 43210"
+            type="tel"
+            value={formData.phone}
             onChange={handleChange}
           />
         </LabelInputContainer>
@@ -104,20 +121,28 @@ export default function SignupForm() {
 
         {/* Role */}
         <LabelInputContainer>
-          <Label htmlFor="role">Service Type</Label>
+          <Label htmlFor="role">Staff Role</Label>
           <select
             id="role"
             value={formData.role}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2"
           >
-            <option value="" disabled>
-              Select Service
-            </option>
-            <option value="hearing">Hearing</option>
-            <option value="speech">Speech</option>
-            <option value="both">Both</option>
+            <option value="receptionist">Receptionist</option>
+            <option value="audiologist">Audiologist</option>
+            <option value="therapist">Therapist</option>
           </select>
+        </LabelInputContainer>
+
+        <LabelInputContainer>
+          <Label htmlFor="specialization">Specialization</Label>
+          <Input
+            id="specialization"
+            placeholder="Front desk, Audiology, Speech Therapy"
+            type="text"
+            value={formData.specialization}
+            onChange={handleChange}
+          />
         </LabelInputContainer>
 
         {/* Submit */}
