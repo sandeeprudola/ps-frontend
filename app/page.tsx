@@ -107,32 +107,32 @@ const images = [
 const testimonials = [
   {
     quote:
-      "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair.",
-    name: "Charles Dickens",
-    title: "A Tale of Two Cities",
+      "The team explained every step of my hearing test with patience. My new hearing aid fitting felt comfortable from day one, and follow-up care was handled very professionally.",
+    name: "Amit Sharma",
+    title: "Hearing Aid Consultation",
   },
   {
     quote:
-      "To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer The slings and arrows of outrageous fortune, Or to take Arms against a Sea of troubles, And by opposing end them: to die, to sleep.",
-    name: "William Shakespeare",
-    title: "Hamlet",
+      "My child became more confident after regular speech therapy sessions. The therapist kept the sessions friendly, structured, and easy for us to continue at home.",
+    name: "Priya Rawat",
+    title: "Parent of Speech Therapy Patient",
   },
   {
-    quote: "All that we see or seem is but a dream within a dream.",
-    name: "Edgar Allan Poe",
-    title: "A Dream Within a Dream",
-  },
-  {
-    quote:
-      "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
-    name: "Jane Austen",
-    title: "Pride and Prejudice",
+    quote: "I visited for tinnitus and hearing evaluation. The clinic gave clear guidance, practical counselling, and a treatment plan that made me feel supported.",
+    name: "Neha Bisht",
+    title: "Audiology Patient",
   },
   {
     quote:
-      "Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.",
-    name: "Herman Melville",
-    title: "Moby-Dick",
+      "Appointments were smooth and the staff was kind throughout. The hearing aid trial helped my father choose the right device without pressure.",
+    name: "Manoj Verma",
+    title: "Family Member",
+  },
+  {
+    quote:
+      "The voice therapy sessions were focused and encouraging. I could feel real improvement in my speaking stamina within a few weeks.",
+    name: "Ritika Singh",
+    title: "Voice Therapy Patient",
   },
 ];
 
@@ -162,7 +162,7 @@ const slides = [
 
 export default function HeroSectionOne() {
   return (
-    <div className="relative mx-auto my-10 flex max-w-7xl flex-col items-center justify-center">
+    <div id="home" className="relative mx-auto my-10 flex max-w-7xl flex-col items-center justify-center scroll-mt-24">
       <NavbarDemo/>
       <div className="absolute inset-y-0 left-0 h-full w-px bg-neutral-200/80 dark:bg-neutral-800/80">
         <div className="absolute top-0 h-40 w-px bg-gradient-to-b from-transparent via-blue-500 to-transparent" />
@@ -282,7 +282,7 @@ export default function HeroSectionOne() {
    
       <Carousel_001 className="" images={images} showPagination loop />
           </div>
-      <div className="mt-20 pt-10 px-4">
+      <div id="features" className="mt-20 pt-10 px-4 scroll-mt-24">
         <h1
         className="relative z-10 mx-auto max-w-[90vw] sm:max-w-3xl text-center 
                   text-[clamp(1.125rem,5vw,1.75rem)] md:text-[clamp(1.5rem,3vw,2.25rem)] 
@@ -401,6 +401,4 @@ export default function HeroSectionOne() {
     </div>
   );
 }
-
-
 

@@ -81,6 +81,7 @@ type PatientProfile = {
 type Appointment = {
   _id: string;
   appointmentdate: string;
+  duration?: number;
   status?: string;
   appointmentType?: string;
   priority?: string;
@@ -162,6 +163,18 @@ type Reminder = {
   status?: string;
   amount?: number;
   detail?: string;
+};
+
+type AvailabilityResponse = {
+  date: string;
+  duration: number;
+  workingHours: {
+    start: string;
+    end: string;
+    slotIntervalMinutes: number;
+  };
+  bookedSlots: string[];
+  availableSlots: string[];
 };
 
 type DashboardResponse = {
@@ -255,6 +268,10 @@ export default function UserDashboard() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [bookingMessage, setBookingMessage] = useState<string | null>(null);
   const [booking, setBooking] = useState(false);
+  const [bookingDate, setBookingDate] = useState('');
+  const [availability, setAvailability] = useState<AvailabilityResponse | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [cancelingAppointmentId, setCancelingAppointmentId] = useState<string | null>(null);
 
   const [bookingForm, setBookingForm] = useState({
     staff: '',
@@ -513,6 +530,42 @@ export default function UserDashboard() {
     setBookingForm((current) => ({ ...current, [field]: value }));
   };
 
+  const fetchAvailability = async () => {
+    if (!bookingForm.staff || !bookingDate) {
+      setBookingMessage('Select staff and date to check available slots.');
+      return;
+    }
+
+    try {
+      setLoadingSlots(true);
+      setBookingMessage(null);
+      const response = await api.get<AvailabilityResponse>('/appointment/availability', {
+        params: {
+          staffId: bookingForm.staff,
+          date: bookingDate,
+          duration: bookingForm.duration,
+        },
+      });
+      setAvailability(response.data);
+      if (response.data.availableSlots.length === 0) {
+        setBookingMessage('No slots available for this staff member on the selected date.');
+      }
+    } catch (requestError: unknown) {
+      setAvailability(null);
+      setBookingMessage(getApiErrorMessage(requestError, 'Failed to load available slots.'));
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  const selectSlot = (slot: string) => {
+    setBookingForm((current) => ({
+      ...current,
+      appointmentdate: `${bookingDate}T${slot}`,
+    }));
+    setBookingMessage(`Selected ${slot}. You can now book the appointment.`);
+  };
+
   const bookAppointment = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -542,6 +595,8 @@ export default function UserDashboard() {
         notes: '',
       });
       setBookingMessage('Appointment booked successfully.');
+      setAvailability(null);
+      setBookingDate('');
       await fetchData();
     } catch (requestError: unknown) {
       if (isUnauthorizedError(requestError)) {
@@ -553,6 +608,22 @@ export default function UserDashboard() {
       );
     } finally {
       setBooking(false);
+    }
+  };
+
+  const cancelAppointment = async (appointmentId: string) => {
+    try {
+      setCancelingAppointmentId(appointmentId);
+      await api.patch(
+        `/appointment/user/${appointmentId}/cancel`,
+        {},
+        { headers: createAuthHeaders('user') },
+      );
+      await fetchData();
+    } catch (requestError: unknown) {
+      setBookingMessage(getApiErrorMessage(requestError, 'Failed to cancel appointment.'));
+    } finally {
+      setCancelingAppointmentId(null);
     }
   };
 
@@ -816,6 +887,20 @@ export default function UserDashboard() {
                           </select>
                         </div>
                         <div className="space-y-2">
+                          <Label htmlFor="appointment-slot-date">Date</Label>
+                          <Input
+                            id="appointment-slot-date"
+                            type="date"
+                            value={bookingDate}
+                            onChange={(event) => {
+                              setBookingDate(event.target.value);
+                              setAvailability(null);
+                              handleBookingChange('appointmentdate', '');
+                            }}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
                           <Label htmlFor="appointment-date">Date and Time</Label>
                           <Input
                             id="appointment-date"
@@ -825,6 +910,7 @@ export default function UserDashboard() {
                               handleBookingChange('appointmentdate', event.target.value)
                             }
                             required
+                            readOnly
                           />
                         </div>
                         <div className="space-y-2">
@@ -889,6 +975,43 @@ export default function UserDashboard() {
                         </div>
                       </div>
 
+                      <div className="rounded-lg border border-dashed p-3">
+                        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <div className="text-sm font-medium">Available slots</div>
+                            <p className="text-muted-foreground text-xs">
+                              Choose staff, date, and duration, then pick an open slot.
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={fetchAvailability}
+                            disabled={loadingSlots}
+                          >
+                            {loadingSlots ? 'Checking...' : 'Check Slots'}
+                          </Button>
+                        </div>
+                        {availability ? (
+                          <div className="flex flex-wrap gap-2">
+                            {availability.availableSlots.map((slot) => (
+                              <button
+                                key={slot}
+                                type="button"
+                                onClick={() => selectSlot(slot)}
+                                className={`rounded-md border px-3 py-1.5 text-sm transition ${
+                                  bookingForm.appointmentdate.endsWith(slot)
+                                    ? 'border-slate-950 bg-slate-950 text-white'
+                                    : 'border-slate-200 bg-white hover:bg-slate-50'
+                                }`}
+                              >
+                                {slot}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-muted-foreground text-sm">
                           {bookingMessage ?? 'Appointments can be booked during clinic hours.'}
@@ -915,7 +1038,19 @@ export default function UserDashboard() {
                         appointment.appointmentType ?? '-',
                         fullName(appointment.staff),
                         appointment.status ?? '-',
-                        appointment.paymentStatus ?? '-',
+                        <>
+                          <div>{appointment.paymentStatus ?? '-'}</div>
+                          {!['completed', 'canceled'].includes(appointment.status ?? '') ? (
+                            <button
+                              type="button"
+                              onClick={() => cancelAppointment(appointment._id)}
+                              disabled={cancelingAppointmentId === appointment._id}
+                              className="mt-1 text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+                            >
+                              {cancelingAppointmentId === appointment._id ? 'Canceling...' : 'Cancel'}
+                            </button>
+                          ) : null}
+                        </>,
                       ],
                     }))}
                     emptyMessage="No appointments found."

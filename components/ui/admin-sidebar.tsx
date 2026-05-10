@@ -36,6 +36,7 @@ import {
 
 const primaryItems = [
   { title: 'Overview', icon: Sparkles, href: '#overview' },
+  { title: 'Founder', icon: ShieldCheck, href: '#founder', founderOnly: true },
   { title: 'Analytics', icon: BarChart3, href: '#analytics' },
   { title: 'Users', icon: Users, href: '#users' },
   { title: 'Staff', icon: UsersRound, href: '#staff' },
@@ -101,7 +102,9 @@ export const AdminSidebar = memo(
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {primaryItems.map((item) => {
+                {primaryItems
+                  .filter((item) => !item.founderOnly || adminRole === 'super-admin')
+                  .map((item) => {
                   const Icon = item.icon;
                   return (
                     <SidebarMenuItem key={item.href}>

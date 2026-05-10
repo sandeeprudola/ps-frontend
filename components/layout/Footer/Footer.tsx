@@ -1,47 +1,42 @@
 import {
-    Dribbble,
     Facebook,
-    Github,
     Instagram,
     Mail,
     MapPin,
     Phone,
-    Twitter,
   } from 'lucide-react';
   import Link from 'next/link';
   
   const data = {
-    facebookLink: 'https://facebook.com/mvpblocks',
-    instaLink: 'https://instagram.com/mvpblocks',
-    twitterLink: 'https://twitter.com/mvpblocks',
-    githubLink: 'https://github.com/mvpblocks',
-    dribbbleLink: 'https://dribbble.com/mvpblocks',
+    facebookLink: 'https://facebook.com',
+    instaLink: 'https://instagram.com',
+    emailLink: 'mailto:care@psspeechandhearing.com',
     services: {
-      webdev: '/web-development',
-      webdesign: '/web-design',
-      marketing: '/marketing',
-      googleads: '/google-ads',
+      hearing: '#features',
+      speech: '#features',
+      pediatric: '#features',
+      voice: '#features',
     },
     about: {
-      history: '/company-history',
-      team: '/meet-the-team',
-      handbook: '/employee-handbook',
-      careers: '/careers',
+      clinic: '#home',
+      locations: '#contact',
+      brands: '#features',
+      care: '#features',
     },
     help: {
-      faqs: '/faqs',
-      support: '/support',
-      livechat: '/live-chat',
+      signup: '/User/Signin',
+      login: '/User/Login',
+      appointment: '/User/Login',
     },
     contact: {
-      email: 'hello@mvpblocks.com',
+      email: 'care@psspeechandhearing.com',
       phone: '+91 8637373116',
-      address: 'Kolkata, West Bengal, India',
+      address: 'Dehradun, Uttarakhand, India',
     },
     company: {
       name: 'PS Speech & Hearing Clinic',
       description:
-        'Building beautiful and functional web experiences with modern technologies. We help startups and businesses create their digital presence.',
+        'Compassionate audiology, speech therapy, hearing aid consultation, and communication care for children, adults, and families.',
       logo: '/pslogo.png',
     },
   };
@@ -49,40 +44,38 @@ import {
   const socialLinks = [
     { icon: Facebook, label: 'Facebook', href: data.facebookLink },
     { icon: Instagram, label: 'Instagram', href: data.instaLink },
-    { icon: Twitter, label: 'Twitter', href: data.twitterLink },
-    { icon: Github, label: 'GitHub', href: data.githubLink },
-    { icon: Dribbble, label: 'Dribbble', href: data.dribbbleLink },
+    { icon: Mail, label: 'Email', href: data.emailLink },
   ];
   
   const aboutLinks = [
-    { text: 'Company History', href: data.about.history },
-    { text: 'Meet the Team', href: data.about.team },
-    { text: 'Employee Handbook', href: data.about.handbook },
-    { text: 'Careers', href: data.about.careers },
+    { text: 'About the Clinic', href: data.about.clinic },
+    { text: 'Locations Served', href: data.about.locations },
+    { text: 'Trusted Brands', href: data.about.brands },
+    { text: 'Patient Care', href: data.about.care },
   ];
   
   const serviceLinks = [
-    { text: 'Web Development', href: data.services.webdev },
-    { text: 'Web Design', href: data.services.webdesign },
-    { text: 'Marketing', href: data.services.marketing },
-    { text: 'Google Ads', href: data.services.googleads },
+    { text: 'Hearing Evaluation', href: data.services.hearing },
+    { text: 'Speech Therapy', href: data.services.speech },
+    { text: 'Pediatric Care', href: data.services.pediatric },
+    { text: 'Voice Therapy', href: data.services.voice },
   ];
   
   const helpfulLinks = [
-    { text: 'FAQs', href: data.help.faqs },
-    { text: 'Support', href: data.help.support },
-    { text: 'Live Chat', href: data.help.livechat, hasIndicator: true },
+    { text: 'Create Account', href: data.help.signup },
+    { text: 'Patient Login', href: data.help.login },
+    { text: 'Book Appointment', href: data.help.appointment, hasIndicator: true },
   ];
   
   const contactInfo = [
-    { icon: Mail, text: data.contact.email },
-    { icon: Phone, text: data.contact.phone },
-    { icon: MapPin, text: data.contact.address, isAddress: true },
+    { icon: Mail, text: data.contact.email, href: data.emailLink },
+    { icon: Phone, text: data.contact.phone, href: `tel:${data.contact.phone.replace(/\s/g, '')}` },
+    { icon: MapPin, text: data.contact.address, href: '#contact', isAddress: true },
   ];
   
   export default function Footer4Col() {
     return (
-      <footer className="bg-secondary dark:bg-secondary/20 mt-16 w-full place-self-end rounded-t-xl">
+      <footer id="contact" className="bg-secondary dark:bg-secondary/20 mt-16 w-full place-self-end rounded-t-xl scroll-mt-24">
         <div className="mx-auto max-w-screen-xl px-4 pt-16 pb-6 sm:px-6 lg:px-8 lg:pt-24">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div>
@@ -181,11 +174,11 @@ import {
               <div className="text-center sm:text-left">
                 <p className="text-lg font-medium">Contact Us</p>
                 <ul className="mt-8 space-y-4 text-sm">
-                  {contactInfo.map(({ icon: Icon, text, isAddress }) => (
+                  {contactInfo.map(({ icon: Icon, text, href, isAddress }) => (
                     <li key={text}>
                       <a
                         className="flex items-center justify-center gap-1.5 sm:justify-start"
-                        href="#"
+                        href={href}
                       >
                         <Icon className="text-primary size-5 shrink-0 shadow-sm" />
                         {isAddress ? (
@@ -212,7 +205,7 @@ import {
               </p>
   
               <p className="text-secondary-foreground/70 mt-4 text-sm transition sm:order-first sm:mt-0">
-                &copy; 2025 {data.company.name}
+                &copy; 2026 {data.company.name}
               </p>
             </div>
           </div>

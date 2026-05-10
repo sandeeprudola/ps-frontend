@@ -17,10 +17,10 @@ export const NavbarDemo = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
-    { name: "Home", link: "#home" },
-    { name: "Features", link: "#features" },
-    { name: "Pricing", link: "#pricing" },
-    { name: "Contact", link: "#contact" },
+    { name: "Home", link: "/#home" },
+    { name: "Features", link: "/#features" },
+    { name: "Pricing", link: "/catalogue" },
+    { name: "Contact", link: "/#contact" },
   ];
 
   return (

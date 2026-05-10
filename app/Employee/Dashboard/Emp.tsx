@@ -56,6 +56,8 @@ type AppointmentRecord = {
   appointmentType: string;
   priority?: string;
   paymentStatus?: string;
+  notes?: string;
+  duration?: number;
 };
 
 type LeadRecord = {
@@ -180,6 +182,7 @@ export default function EmployeeDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [updatingAppointmentId, setUpdatingAppointmentId] = useState<string | null>(null);
   const [inventoryForm, setInventoryForm] = useState({
     itemId: '',
     quantity: '1',
@@ -257,6 +260,27 @@ export default function EmployeeDashboard() {
       await fetchDashboard();
     } catch (error: unknown) {
       setMessage(getApiErrorMessage(error, 'Failed to log inventory.'));
+    }
+  };
+
+  const updateAppointmentStatus = async (
+    appointmentId: string,
+    status: 'confirmed' | 'in-progress' | 'completed' | 'canceled',
+  ) => {
+    try {
+      setUpdatingAppointmentId(appointmentId);
+      setMessage(null);
+      await api.patch(
+        `/appointment/${appointmentId}/employee`,
+        { status },
+        { headers: createAuthHeaders('employee') },
+      );
+      setMessage('Appointment updated.');
+      await fetchDashboard();
+    } catch (error: unknown) {
+      setMessage(getApiErrorMessage(error, 'Failed to update appointment.'));
+    } finally {
+      setUpdatingAppointmentId(null);
     }
   };
 
@@ -418,23 +442,73 @@ export default function EmployeeDashboard() {
           </div>
         </section>
 
-        <DashboardTableCard
+        <section
           id="appointments"
-          title="Appointments"
-          description="Assigned patient appointments from the backend appointment route."
-          countLabel={`${data?.appointments.length ?? 0} loaded`}
-          columns={['Patient', 'When', 'Type', 'Status', 'Payment']}
-          rows={(data?.appointments ?? []).map((appointment) => ({
-            key: appointment._id,
-            cells: [
-              formatName(appointment.patient),
-              formatDateTime(appointment.appointmentdate),
-              appointment.appointmentType,
-              appointment.status,
-              appointment.paymentStatus ?? '-',
-            ],
-          }))}
-        />
+          className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Appointments</h2>
+              <p className="text-sm text-slate-600">
+                Confirm visits, start consultations, complete sessions, or cancel assigned appointments.
+              </p>
+            </div>
+            <span className="text-sm font-medium text-slate-500">
+              {data?.appointments.length ?? 0} loaded
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {(data?.appointments ?? []).map((appointment) => (
+              <article
+                key={appointment._id}
+                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 className="font-semibold text-slate-950">
+                      {formatName(appointment.patient)}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {formatDateTime(appointment.appointmentdate)} · {appointment.appointmentType}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {appointment.duration ?? 30} min · {appointment.paymentStatus ?? 'payment pending'}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
+                    {appointment.status}
+                  </span>
+                </div>
+
+                {appointment.notes ? (
+                  <p className="mt-3 rounded-xl bg-white p-3 text-sm text-slate-600">
+                    {appointment.notes}
+                  </p>
+                ) : null}
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(['confirmed', 'in-progress', 'completed', 'canceled'] as const).map((status) => (
+                    <Button
+                      key={status}
+                      size="sm"
+                      variant={appointment.status === status ? 'default' : 'outline'}
+                      disabled={updatingAppointmentId === appointment._id}
+                      onClick={() => updateAppointmentStatus(appointment._id, status)}
+                    >
+                      {status === 'in-progress' ? 'Start' : status[0].toUpperCase() + status.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+              </article>
+            ))}
+            {(data?.appointments ?? []).length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 lg:col-span-2">
+                No appointments assigned yet.
+              </div>
+            ) : null}
+          </div>
+        </section>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <DashboardTableCard

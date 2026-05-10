@@ -16,8 +16,8 @@ export default function SignupForm() {
     email: "",
     password: "",
     role: "",
-    HearingServices:"",
-    SpeechServices:""
+    HearingServices:"None",
+    SpeechServices:"None"
   });
   const router = useRouter();
 
@@ -31,7 +31,11 @@ export default function SignupForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await api.post("/user/signup", formData);
+      const response = await api.post("/user/signup", {
+        ...formData,
+        HearingServices: formData.HearingServices || "None",
+        SpeechServices: formData.SpeechServices || "None",
+      });
       console.log("Signup success:", response.data);
       setUserToken(response.data.token);
       router.push("/User/Dashboard");
@@ -134,9 +138,6 @@ export default function SignupForm() {
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2"
           >
-            <option value="" disabled>
-              Select Hearing Service
-            </option>
             {HEARING_SERVICES.map((service) => (
               <option key={service} value={service}>
                 {service}
@@ -152,9 +153,6 @@ export default function SignupForm() {
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2"
           >
-            <option value="" disabled>
-              Select Speech / OT Service
-            </option>
             {SPEECH_SERVICES.map((service) => (
               <option key={service} value={service}>
                 {service}

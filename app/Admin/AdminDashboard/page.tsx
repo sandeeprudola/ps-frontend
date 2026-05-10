@@ -29,6 +29,10 @@ import {
   type InventoryLogRecord,
 } from '@/components/dashboard/admin/admin-inventory-panel';
 import {
+  AdminFounderPanel,
+  type BranchRecord,
+} from '@/components/dashboard/admin/admin-founder-panel';
+import {
   AdminLeadsPanel,
   type AdminLeadConversionDraft,
   type AdminLeadDraft,
@@ -79,6 +83,68 @@ type AdminProfile = {
   email?: string;
   role?: string;
   caninvite?: boolean;
+};
+
+type FounderDashboardResponse = {
+  summary?: {
+    branchCount?: number;
+    activeBranchCount?: number;
+    totalSalesToday?: number;
+    totalSalesCountToday?: number;
+    totalCollectionToday?: number;
+    totalCollectionCountToday?: number;
+    totalPendingDues?: number;
+    pendingDueSalesCount?: number;
+  };
+  branchWiseRevenue?: {
+    branchId?: string | null;
+    branch?: BranchRecord | null;
+    revenue?: number;
+    salesCount?: number;
+    dueAmount?: number;
+  }[];
+  branchWiseAppointments?: {
+    branchId?: string | null;
+    branch?: BranchRecord | null;
+    appointments?: number;
+  }[];
+  topSellingBranch?: {
+    branch?: BranchRecord | null;
+    revenue?: number;
+    salesCount?: number;
+    dueAmount?: number;
+  } | null;
+  topEmployees?: {
+    employeeId?: string;
+    name?: string;
+    role?: string;
+    specialization?: string;
+    revenue?: number;
+    salesCount?: number;
+  }[];
+  lowStock?: {
+    _id: string;
+    name: string;
+    sku: string;
+    currentQty: number;
+    branch?: BranchRecord | null;
+  }[];
+  emiPending?: {
+    totalAmount?: number;
+    totalCount?: number;
+    byBranch?: {
+      branch?: BranchRecord | null;
+      amount?: number;
+      count?: number;
+    }[];
+  };
+  serviceTicketLoad?: {
+    totalOpen?: number;
+    byBranch?: {
+      branch?: BranchRecord | null;
+      tickets?: number;
+    }[];
+  };
 };
 
 type StatsResponse = {
@@ -138,6 +204,9 @@ export default function AdminDashboard() {
   const [reportMonth, setReportMonth] = useState(currentDate.getMonth() + 1);
   const [reportData, setReportData] = useState<AdminMonthlyReport | null>(null);
   const [statsData, setStatsData] = useState<StatsResponse | null>(null);
+  const [founderDashboard, setFounderDashboard] =
+    useState<FounderDashboardResponse | null>(null);
+  const [branches, setBranches] = useState<BranchRecord[]>([]);
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +218,7 @@ export default function AdminDashboard() {
   const [savingLeadId, setSavingLeadId] = useState<string | null>(null);
   const [convertingLeadId, setConvertingLeadId] = useState<string | null>(null);
   const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [creatingBranch, setCreatingBranch] = useState(false);
   const [creatingLead, setCreatingLead] = useState(false);
   const [creatingInventoryItem, setCreatingInventoryItem] = useState(false);
   const [loggingInventory, setLoggingInventory] = useState(false);
@@ -175,9 +245,12 @@ export default function AdminDashboard() {
       setError(null);
 
       const headers = createAuthHeaders('admin');
+      const adminRes = await api.get('/admin/me', { headers });
+      const adminProfile = adminRes.data.admin ?? null;
+      const isFounder = adminProfile?.role === 'super-admin';
+
       const [
         dashboardRes,
-        adminRes,
         usersRes,
         staffRes,
         attendanceRes,
@@ -190,7 +263,6 @@ export default function AdminDashboard() {
       ] =
         await Promise.all([
           api.get('/admin/dashboard', { headers }),
-          api.get('/admin/me', { headers }),
           api.get('/admin/users', {
             headers,
             params: { page: usersPage, limit: pageSize, q: searchQuery || undefined },
@@ -224,9 +296,16 @@ export default function AdminDashboard() {
           }),
         ]);
 
+      const [branchesRes, founderRes] = await Promise.all([
+        api.get<{ branches: BranchRecord[] }>('/admin/branches', { headers }),
+        isFounder
+          ? api.get<FounderDashboardResponse>('/admin/founder-dashboard', { headers })
+          : Promise.resolve({ data: null as FounderDashboardResponse | null }),
+      ]);
+
       setSummary(dashboardRes.data.summary);
       setTodaySchedule(dashboardRes.data.todaySchedule ?? []);
-      setAdmin(adminRes.data.admin ?? null);
+      setAdmin(adminProfile);
       setUsers(usersRes.data.items ?? []);
       setUsersTotal(usersRes.data.total ?? 0);
       setStaff(staffRes.data.items ?? []);
@@ -243,6 +322,8 @@ export default function AdminDashboard() {
       setLeadsTotal(leadsRes.data.total ?? 0);
       setReportData(reportRes.data ?? null);
       setStatsData(statsRes.data ?? null);
+      setBranches(branchesRes.data.branches ?? []);
+      setFounderDashboard(founderRes.data ?? null);
     } catch (requestError: unknown) {
       if (isUnauthorizedError(requestError)) {
         clearStoredTokens();
@@ -507,6 +588,40 @@ export default function AdminDashboard() {
       setActionMessage(getApiErrorMessage(requestError, 'Failed to create admin.'));
     } finally {
       setCreatingAdmin(false);
+    }
+  };
+
+  const createBranch = async (payload: {
+    name: string;
+    code: string;
+    city: string;
+    address: string;
+    phone: string;
+  }) => {
+    try {
+      setCreatingBranch(true);
+      setActionMessage(null);
+      await api.post(
+        '/admin/branches',
+        {
+          name: payload.name,
+          code: payload.code,
+          city: payload.city,
+          address: payload.address || undefined,
+          phone: payload.phone || undefined,
+        },
+        { headers: createAuthHeaders('admin') },
+      );
+      setActionMessage('Branch created successfully.');
+      await fetchDashboardData();
+    } catch (requestError: unknown) {
+      if (isUnauthorizedError(requestError)) {
+        handleLogout();
+        return;
+      }
+      setActionMessage(getApiErrorMessage(requestError, 'Failed to create branch.'));
+    } finally {
+      setCreatingBranch(false);
     }
   };
 
@@ -896,6 +1011,15 @@ export default function AdminDashboard() {
               ))}
             </div>
           </section>
+
+          {admin?.role === 'super-admin' ? (
+            <AdminFounderPanel
+              founderDashboard={founderDashboard}
+              branches={branches}
+              onCreateBranch={createBranch}
+              creatingBranch={creatingBranch}
+            />
+          ) : null}
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.25fr_0.75fr]">
             <TodayScheduleTable schedule={todaySchedule} />
